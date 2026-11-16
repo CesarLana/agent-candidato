@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaga de Teste: Desenvolvedor Backend Pleno - TechCorp</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f8; margin: 0; padding: 40px; }
+    .container { max-width: 650px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h1 { color: #1e293b; margin-top: 0; }
+    .company { color: #64748b; font-size: 1.1rem; margin-bottom: 20px; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; color: #334155; }
+    input[type="text"], input[type="email"], input[type="tel"], textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+    input:focus, textarea:focus { border-color: #3b82f6; outline: none; }
+    textarea { height: 90px; }
+    .btn-submit { background: #2563eb; color: #fff; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; }
+    .btn-submit:hover { background: #1d4ed8; }
+    .success-msg { display: none; background: #dcfce7; color: #15803d; padding: 15px; border-radius: 6px; margin-top: 20px; text-align: center; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Desenvolvedor Backend Pleno (Python / Node.js)</h1>
+    <div class="company">TechCorp Soluções Digitais • Remoto • CLT / PJ</div>
+    
+    <p>Buscamos pessoa desenvolvedora com experiência em desenvolvimento de microsserviços, APIs RESTful e bancos relacionais.</p>
+    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+
+    <form id="apply-form" onsubmit="event.preventDefault(); document.getElementById('success-banner').style.display = 'block';">
+      <div class="form-group">
+        <label for="first_name">Primeiro Nome *</label>
+        <input type="text" id="first_name" name="first_name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="last_name">Sobrenome *</label>
+        <input type="text" id="last_name" name="last_name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">E-mail Corporativo ou Pessoal *</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Telefone / WhatsApp *</label>
+        <input type="tel" id="phone" name="phone" required>
+      </div>
+
+      <div class="form-group">
+        <label for="linkedin">Link do LinkedIn</label>
+        <input type="text" id="linkedin" name="linkedin">
+      </div>
+
+      <div class="form-group">
+        <label for="github">Link do GitHub</label>
+        <input type="text" id="github" name="github">
+      </div>
+
+      <div class="form-group">
+        <label for="salary">Qual sua pretensão salarial?</label>
+        <input type="text" id="salary" name="salary">
+      </div>
+
+      <div class="form-group">
+        <label for="work_authorization">Possui autorização para trabalhar no Brasil?</label>
+        <select id="work_authorization" name="work_authorization">
+          <option value="">Selecione...</option>
+          <option value="sim">Sim, cidadão ou residente</option>
+          <option value="nao">Não, necessito de visto</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="cover_letter">Carta de Apresentação / Mensagem</label>
+        <textarea id="cover_letter" name="cover_letter" placeholder="Apresente-se brevemente..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="why_us">Por que você quer trabalhar na TechCorp?</label>
+        <textarea id="why_us" name="why_us"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="resume">Anexe seu Currículo (PDF/TXT) *</label>
+        <input type="file" id="resume" name="resume">
+      </div>
+
+      <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="terms" name="terms_consent">
+        <label for="terms" style="margin-bottom: 0; font-weight: normal; font-size: 13px;">Concordo com a política de privacidade e tratamento de dados (LGPD) *</label>
+      </div>
+
+      <button type="submit" class="btn-submit">Enviar Candidatura</button>
+      <div id="success-banner" class="success-msg">🎉 Candidatura Enviada com Sucesso pela Automação!</div>
+    </form>
+  </div>
+</body>
+</html>

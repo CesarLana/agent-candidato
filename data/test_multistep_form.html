@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaga Multi-Etapas: TechCorp</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #f1f5f9; padding: 30px; }
+    .box { max-width: 600px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .step { display: none; }
+    .step.active { display: block; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: 600; margin-bottom: 5px; color: #334155; }
+    input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 5px; box-sizing: border-box; }
+    .btn { background: #2563eb; color: #fff; border: none; padding: 10px 18px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+    .btn-submit { background: #16a34a; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Candidatura: Desenvolvedor Python Pleno</h2>
+    
+    <div id="step-1" class="step active">
+      <h3>Etapa 1: Dados Pessoais</h3>
+      <div class="form-group">
+        <label for="first_name">Primeiro Nome</label>
+        <input type="text" id="first_name" name="first_name">
+      </div>
+      <div class="form-group">
+        <label for="last_name">Sobrenome</label>
+        <input type="text" id="last_name" name="last_name">
+      </div>
+      <div class="form-group">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email">
+      </div>
+      <button type="button" class="btn" onclick="document.getElementById('step-1').classList.remove('active'); document.getElementById('step-2').classList.add('active');">Avançar</button>
+    </div>
+
+    <div id="step-2" class="step">
+      <h3>Etapa 2: Informações Técnicas e Anexos</h3>
+      <div class="form-group">
+        <label for="linkedin">LinkedIn</label>
+        <input type="text" id="linkedin" name="linkedin">
+      </div>
+      <div class="form-group">
+        <label for="salary">Pretensão Salarial</label>
+        <input type="text" id="salary" name="salary">
+      </div>
+      <div class="form-group">
+        <label for="resume">Currículo</label>
+        <input type="file" id="resume" name="resume">
+      </div>
+      <button type="submit" class="btn btn-submit">Enviar Candidatura</button>
+    </div>
+  </div>
+</body>
+</html>

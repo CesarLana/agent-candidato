@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agente Candidato - Centro de Comando de Carreiras</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #0b0f19; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-nav { background: rgba(11, 15, 25, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+    .kanban-col { min-height: 520px; transition: background-color 0.2s ease; }
+    .kanban-col.drag-over { background-color: rgba(37, 99, 235, 0.12); border-color: rgba(59, 130, 246, 0.5); }
+    .job-card-drag { cursor: grab; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .job-card-drag:active { cursor: grabbing; transform: scale(0.98); }
+    /* Scrollbar personalizada */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="min-h-screen pb-16">
+
+  <!-- NAVBAR -->
+  <nav class="sticky top-0 z-40 glass-nav px-6 py-4 mb-8">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30">
+          🤖
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold text-white tracking-wide">Agente Candidato</h1>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 uppercase">v5.0 Pro</span>
+          </div>
+          <p class="text-xs text-slate-400">Automação Inteligente de Candidaturas, Networking & Entrevistas</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="openProfileModal()" class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-sm font-semibold transition">
+          <i class="fa-solid fa-user-pen text-indigo-400"></i> Meu Perfil
+        </button>
+        <button onclick="triggerHunt()" id="huntBtn" class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 text-sm font-semibold transition">
+          <i class="fa-solid fa-radar animate-pulse"></i> Caçador Automático
+        </button>
+        <a href="/api/export-csv" class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-sm font-semibold transition">
+          <i class="fa-solid fa-file-csv text-emerald-400"></i> CSV
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-6 space-y-8">
+
+    <!-- BARRA DE ANÁLISE RÁPIDA -->
+    <div class="glass-card rounded-2xl p-6 shadow-xl">
+      <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+        <i class="fa-solid fa-link text-blue-400 mr-1"></i> Analisar Nova Vaga (Gupy, Greenhouse, Lever, LinkedIn, WeWorkRemotely, etc.)
+      </h2>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input type="url" id="jobUrlInput" placeholder="Cole a URL da vaga aqui (ex: https://boards.greenhouse.io/empresa/jobs/123)..." class="flex-1 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500">
+        <button onclick="analyzeJob()" id="analyzeBtn" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Analisar Vaga
+        </button>
+      </div>
+      <div id="analyzeFeedback" class="hidden mt-3 text-sm"></div>
+    </div>
+
+    <!-- CARDS DE MÉTRICAS -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="glass-card rounded-2xl p-5 border-l-4 border-slate-500">
+        <div class="text-slate-400 text-xs font-semibold uppercase">Vagas Analisadas</div>
+        <div id="statTotal" class="text-3xl font-extrabold text-white mt-2">0</div>
+        <div class="text-xs text-slate-500 mt-1">Total no banco</div>
+      </div>
+      <div class="glass-card rounded-2xl p-5 border-l-4 border-blue-500">
+        <div class="text-slate-400 text-xs font-semibold uppercase">Candidaturas Enviadas</div>
+        <div id="statApplied" class="text-3xl font-extrabold text-blue-400 mt-2">0</div>
+        <div class="text-xs text-slate-500 mt-1">Submissões ativas</div>
+      </div>
+      <div class="glass-card rounded-2xl p-5 border-l-4 border-emerald-500 bg-emerald-950/20">
+        <div class="text-emerald-400 text-xs font-semibold uppercase">Entrevistas Agendadas</div>
+        <div id="statInterviews" class="text-3xl font-extrabold text-emerald-400 mt-2">0</div>
+        <div id="statConvRate" class="text-xs text-emerald-500/80 mt-1">0% de conversão</div>
+      </div>
+      <div class="glass-card rounded-2xl p-5 border-l-4 border-purple-500">
+        <div class="text-slate-400 text-xs font-semibold uppercase">Propostas Recebidas</div>
+        <div id="statOffers" class="text-3xl font-extrabold text-purple-400 mt-2">0</div>
+        <div class="text-xs text-slate-500 mt-1">Ofertas formais</div>
+      </div>
+      <div class="glass-card rounded-2xl p-5 border-l-4 border-amber-500 col-span-2 md:col-span-1">
+        <div class="text-slate-400 text-xs font-semibold uppercase">Média de Fit Score</div>
+        <div id="statAvgFit" class="text-3xl font-extrabold text-amber-400 mt-2">0%</div>
+        <div class="text-xs text-slate-500 mt-1">Aderência técnica</div>
+      </div>
+    </div>
+
+    <!-- SELETOR DE MODO DE VISUALIZAÇÃO & FILTROS -->
+    <div class="flex items-center justify-between flex-wrap gap-4 border-b border-slate-800 pb-4">
+      <div class="flex items-center gap-3">
+        <!-- ALTERNADOR DE MODO: GRADE VS KANBAN -->
+        <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+          <button id="viewGridBtn" onclick="switchView('grid')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition flex items-center gap-1.5">
+            <i class="fa-solid fa-table-cells-large"></i> Grade de Cards
+          </button>
+          <button id="viewKanbanBtn" onclick="switchView('kanban')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+            <i class="fa-solid fa-bars-progress"></i> Quadro Kanban
+          </button>
+        </div>
+
+        <!-- ABAS DE FILTRO (visíveis apenas no modo Grade) -->
+        <div class="flex items-center gap-2 overflow-x-auto" id="filterTabs">
+          <button onclick="setFilter('all')" class="filter-btn active px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white" data-status="all">Todas</button>
+          <button onclick="setFilter('applied')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700" data-status="applied">Aplicadas</button>
+          <button onclick="setFilter('interview')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700" data-status="interview">🎉 Entrevistas</button>
+          <button onclick="setFilter('pending')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700" data-status="pending">Pendentes</button>
+          <button onclick="setFilter('offer')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700" data-status="offer">🚀 Ofertas</button>
+          <button onclick="setFilter('rejected')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700" data-status="rejected">Rejeitadas</button>
+        </div>
+      </div>
+
+      <button onclick="loadData()" class="text-slate-400 hover:text-white text-xs font-medium transition flex items-center gap-1.5">
+        <i class="fa-solid fa-arrows-rotate"></i> Atualizar Dados
+      </button>
+    </div>
+
+    <!-- MODO 1: GRADE DE CARDS -->
+    <div id="gridViewContainer">
+      <div id="jobsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Renderizado dinamicamente -->
+      </div>
+    </div>
+
+    <!-- MODO 2: QUADRO KANBAN DRAG & DROP -->
+    <div id="kanbanViewContainer" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-6">
+        
+        <!-- COLUNA: PENDENTES -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col border-t-4 border-slate-500 kanban-col" id="col-pending" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'pending')">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+            <span class="text-xs font-bold uppercase text-slate-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-clock text-slate-400"></i> Pendentes
+            </span>
+            <span id="badge-pending" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-800 text-slate-300">0</span>
+          </div>
+          <div class="space-y-3 flex-1 kanban-items" id="items-pending"></div>
+        </div>
+
+        <!-- COLUNA: APLICADAS -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col border-t-4 border-blue-500 kanban-col" id="col-applied" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'applied')">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+            <span class="text-xs font-bold uppercase text-blue-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-paper-plane text-blue-400"></i> Aplicadas
+            </span>
+            <span id="badge-applied" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-900/60 text-blue-300">0</span>
+          </div>
+          <div class="space-y-3 flex-1 kanban-items" id="items-applied"></div>
+        </div>
+
+        <!-- COLUNA: ENTREVISTAS -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col border-t-4 border-emerald-500 kanban-col bg-emerald-950/10" id="col-interview" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'interview')">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+            <span class="text-xs font-bold uppercase text-emerald-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-check text-emerald-400"></i> Entrevistas
+            </span>
+            <span id="badge-interview" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-900/60 text-emerald-300">0</span>
+          </div>
+          <div class="space-y-3 flex-1 kanban-items" id="items-interview"></div>
+        </div>
+
+        <!-- COLUNA: OFERTAS -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col border-t-4 border-purple-500 kanban-col bg-purple-950/10" id="col-offer" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'offer')">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+            <span class="text-xs font-bold uppercase text-purple-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-crown text-purple-400"></i> Propostas
+            </span>
+            <span id="badge-offer" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-900/60 text-purple-300">0</span>
+          </div>
+          <div class="space-y-3 flex-1 kanban-items" id="items-offer"></div>
+        </div>
+
+        <!-- COLUNA: REJEITADAS -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col border-t-4 border-rose-500/60 kanban-col" id="col-rejected" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event, 'rejected')">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+            <span class="text-xs font-bold uppercase text-rose-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-xmark text-rose-400"></i> Rejeitadas
+            </span>
+            <span id="badge-rejected" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-950 text-rose-300">0</span>
+          </div>
+          <div class="space-y-3 flex-1 kanban-items" id="items-rejected"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL: CARTA DE APRESENTAÇÃO -->
+  <div id="modalLetter" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <h3 id="modalLetterTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-envelope text-blue-400"></i> Carta de Apresentação Sob Medida
+        </h3>
+        <button onclick="closeModal('modalLetter')" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+      <div id="modalLetterContent" class="overflow-y-auto flex-1 text-sm text-slate-300 whitespace-pre-wrap leading-relaxed p-4 bg-slate-950/60 rounded-xl border border-slate-800/80 font-mono text-xs"></div>
+      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="copyToClipboard('modalLetterContent')" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-copy"></i> Copiar Carta
+        </button>
+        <button onclick="closeModal('modalLetter')" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GUIA DE PREPARAÇÃO DE ENTREVISTA -->
+  <div id="modalPrep" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <h3 id="modalPrepTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-graduation-cap text-amber-400"></i> Preparador de Entrevista Técnica & Comportamental
+        </h3>
+        <button onclick="closeModal('modalPrep')" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+      <div id="modalPrepContent" class="overflow-y-auto flex-1 text-sm text-slate-300 whitespace-pre-wrap leading-relaxed p-4 bg-slate-950/60 rounded-xl border border-slate-800/80"></div>
+      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="copyToClipboard('modalPrepContent')" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-copy"></i> Copiar Guia Completo
+        </button>
+        <button onclick="closeModal('modalPrep')" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: COLD OUTREACH & MENSAGENS DE NETWORKING -->
+  <div id="modalOutreach" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 max-h-[88vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+        <h3 id="modalOutreachTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-comments text-indigo-400"></i> Mensagens Estratégicas de Contato & Networking
+        </h3>
+        <button onclick="closeModal('modalOutreach')" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+
+      <!-- ABAS DE FORMATO DE CONTATO -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800/80 mb-3" id="outreachTabs">
+        <button onclick="switchOutreachTab('note')" id="tab-note" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white flex items-center gap-1">
+          <i class="fa-brands fa-linkedin"></i> Conexão LinkedIn (<300c)
+        </button>
+        <button onclick="switchOutreachTab('inmail')" id="tab-inmail" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1">
+          <i class="fa-solid fa-paper-plane"></i> InMail Recrutador
+        </button>
+        <button onclick="switchOutreachTab('cold')" id="tab-cold" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1">
+          <i class="fa-solid fa-envelope"></i> Cold Email Tech Lead
+        </button>
+        <button onclick="switchOutreachTab('followup')" id="tab-followup" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1">
+          <i class="fa-solid fa-clock-rotate-left"></i> Follow-up 7 Dias
+        </button>
+        <button onclick="switchOutreachTab('thankyou')" id="tab-thankyou" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1">
+          <i class="fa-solid fa-handshake-angle"></i> Pós-Entrevista
+        </button>
+      </div>
+
+      <div class="relative flex-1 overflow-hidden flex flex-col">
+        <div id="outreachContent" class="overflow-y-auto flex-1 text-sm text-slate-300 whitespace-pre-wrap leading-relaxed p-4 bg-slate-950/60 rounded-xl border border-slate-800/80 font-mono text-xs"></div>
+        <div id="charCountNotice" class="text-[11px] text-slate-400 mt-2 px-1"></div>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="copyToClipboard('outreachContent')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-copy"></i> Copiar Mensagem
+        </button>
+        <button onclick="closeModal('modalOutreach')" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PLANO DE ESTUDO & ROADMAP DE GAPS TÉCNICOS -->
+  <div id="modalRoadmap" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <h3 id="modalRoadmapTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-rocket text-purple-400"></i> Plano de Aceleração Técnica (Sprint de 7 Dias)
+        </h3>
+        <button onclick="closeModal('modalRoadmap')" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+      <div id="modalRoadmapContent" class="overflow-y-auto flex-1 text-sm text-slate-300 whitespace-pre-wrap leading-relaxed p-4 bg-slate-950/60 rounded-xl border border-slate-800/80"></div>
+      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="copyToClipboard('modalRoadmapContent')" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-copy"></i> Copiar Roteiro de Estudos
+        </button>
+        <button onclick="closeModal('modalRoadmap')" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDITOR DE PERFIL DO CANDIDATO -->
+  <div id="modalProfile" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 max-h-[90vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-user-pen text-indigo-400"></i> Editar Meu Perfil Profissional
+        </h3>
+        <button onclick="closeModal('modalProfile')" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+
+      <div class="overflow-y-auto flex-1 space-y-4 pr-1 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Nome Completo</label>
+            <input type="text" id="profFullName" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">E-mail</label>
+            <input type="email" id="profEmail" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Telefone / WhatsApp</label>
+            <input type="text" id="profPhone" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Cidade / Estado</label>
+            <input type="text" id="profLocation" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">LinkedIn URL</label>
+            <input type="url" id="profLinkedIn" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">GitHub URL</label>
+            <input type="url" id="profGitHub" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Habilidades Principais (separadas por vírgula)</label>
+          <input type="text" id="profSkillsPrimary" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Habilidades Secundárias (separadas por vírgula)</label>
+          <input type="text" id="profSkillsSecondary" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Resumo Profissional</label>
+          <textarea id="profSummary" rows="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white leading-relaxed"></textarea>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
+        <span id="profileSaveFeedback" class="text-xs"></span>
+        <div class="flex gap-2">
+          <button onclick="closeModal('modalProfile')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Cancelar</button>
+          <button onclick="saveProfile()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar Perfil
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentFilter = 'all';
+    let currentView = 'grid';
+    let allJobs = [];
+    let currentOutreachData = null;
+    let fullProfileCache = null;
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const s = await res.json();
+        document.getElementById('statTotal').innerText = s.total;
+        document.getElementById('statApplied').innerText = s.applied;
+        document.getElementById('statInterviews').innerText = s.interviews;
+        document.getElementById('statOffers').innerText = s.offers;
+        document.getElementById('statAvgFit').innerText = s.avg_fit + '%';
+        document.getElementById('statConvRate').innerText = s.conversion_rate + '% de conversão';
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadData() {
+      await loadStats();
+      try {
+        const res = await fetch('/api/jobs');
+        allJobs = await res.json();
+        if (currentView === 'grid') {
+          renderGridJobs();
+        } else {
+          renderKanban();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function switchView(mode) {
+      currentView = mode;
+      const gridBtn = document.getElementById('viewGridBtn');
+      const kanbanBtn = document.getElementById('viewKanbanBtn');
+      const gridContainer = document.getElementById('gridViewContainer');
+      const kanbanContainer = document.getElementById('kanbanViewContainer');
+      const filterTabs = document.getElementById('filterTabs');
+
+      if (mode === 'grid') {
+        gridBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition flex items-center gap-1.5';
+        kanbanBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition flex items-center gap-1.5';
+        gridContainer.classList.remove('hidden');
+        kanbanContainer.classList.add('hidden');
+        filterTabs.classList.remove('hidden');
+        renderGridJobs();
+      } else {
+        kanbanBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition flex items-center gap-1.5';
+        gridBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition flex items-center gap-1.5';
+        kanbanContainer.classList.remove('hidden');
+        gridContainer.classList.add('hidden');
+        filterTabs.classList.add('hidden');
+        renderKanban();
+      }
+    }
+
+    function setFilter(status) {
+      currentFilter = status;
+      document.querySelectorAll('#filterTabs .filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-status') === status) {
+          btn.className = 'filter-btn active px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white';
+        } else {
+          btn.className = 'filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700';
+        }
+      });
+      renderGridJobs();
+    }
+
+    function getFitBadge(score) {
+      if (score >= 75) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+      if (score >= 60) return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+      return 'bg-red-500/10 text-red-400 border-red-500/20';
+    }
+
+    function renderGridJobs() {
+      const container = document.getElementById('jobsContainer');
+      const filtered = currentFilter === 'all' ? allJobs : allJobs.filter(j => j.status === currentFilter);
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="col-span-full py-16 text-center text-slate-500">
+            <i class="fa-solid fa-inbox text-4xl mb-3 block"></i>
+            Nenhuma vaga encontrada nesta categoria.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(job => {
+        const score = job.fit_score || 0;
+        const badgeColor = getFitBadge(score);
+
+        const statusLabels = {
+          'applied': '<span class="text-blue-400 font-semibold"><i class="fa-solid fa-paper-plane mr-1"></i> Aplicada</span>',
+          'interview': '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-star mr-1"></i> Entrevista!</span>',
+          'offer': '<span class="text-purple-400 font-semibold"><i class="fa-solid fa-crown mr-1"></i> Proposta!</span>',
+          'pending': '<span class="text-slate-400 font-semibold"><i class="fa-solid fa-clock mr-1"></i> Pendente</span>',
+          'rejected': '<span class="text-rose-400 font-semibold"><i class="fa-solid fa-circle-xmark mr-1"></i> Rejeitada</span>',
+          'skipped': '<span class="text-slate-500 font-semibold"><i class="fa-solid fa-forward mr-1"></i> Ignorada</span>'
+        };
+
+        const matchedBadges = (job.skills_matched || []).slice(0, 4).map(s => 
+          `<span class="px-2 py-0.5 rounded-md bg-blue-950/60 text-blue-300 border border-blue-800 text-[10px] font-medium">${s}</span>`
+        ).join('');
+
+        const missingBadges = (job.skills_missing || []).slice(0, 2).map(s => 
+          `<span class="px-2 py-0.5 rounded-md bg-purple-950/40 text-purple-300 border border-purple-800/60 text-[10px] font-medium" title="Requisito complementar">${s}</span>`
+        ).join('');
+
+        return `
+          <div class="glass-card rounded-2xl p-6 flex flex-col justify-between hover:border-slate-600 transition shadow-lg">
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-bold border ${badgeColor}">
+                  Fit: ${score}%
+                </span>
+                <span class="text-xs">
+                  ${statusLabels[job.status] || job.status}
+                </span>
+              </div>
+
+              <h3 class="text-base font-bold text-white line-clamp-1 mb-1" title="${job.title}">
+                ${job.title}
+              </h3>
+              <p class="text-xs font-semibold text-blue-400 mb-2">${job.company}</p>
+
+              <div class="flex items-center gap-2 text-xs text-slate-400 mb-3">
+                <span><i class="fa-solid fa-location-dot mr-1"></i>${job.location || 'Brasil'}</span>
+                <span>•</span>
+                <span class="capitalize"><i class="fa-solid fa-house-laptop mr-1"></i>${job.workplace_type || 'Remoto'}</span>
+              </div>
+
+              <div class="flex flex-wrap gap-1.5 mb-3">
+                ${matchedBadges}
+                ${missingBadges}
+              </div>
+
+              <p class="text-xs text-slate-400 line-clamp-2 italic mb-4">
+                "${job.fit_summary || 'Sem resumo disponível.'}"
+              </p>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800 space-y-2.5">
+              <div class="grid grid-cols-4 gap-1.5">
+                <a href="/api/jobs/${job.id}/resume" target="_blank" class="py-1.5 px-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-[11px] font-semibold text-center transition" title="Baixar Currículo ATS sob medida">
+                  <i class="fa-solid fa-file-pdf"></i> PDF
+                </a>
+                <button onclick="openLetterModal('${job.id}')" class="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold transition" title="Carta de Apresentação">
+                  <i class="fa-solid fa-envelope"></i> Carta
+                </button>
+                <button onclick="openOutreachModal('${job.id}')" class="py-1.5 px-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold transition" title="Mensagens de Contato & Networking">
+                  <i class="fa-solid fa-comments"></i> Contato
+                </button>
+                <button onclick="openRoadmapModal('${job.id}')" class="py-1.5 px-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold transition" title="Roadmap de Gaps Técnicos">
+                  <i class="fa-solid fa-rocket"></i> Sprint
+                </button>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button onclick="openPrepModal('${job.id}')" class="flex-1 py-1.5 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold transition text-center" title="Guia de Entrevista">
+                  <i class="fa-solid fa-graduation-cap mr-1"></i> Preparar Entrevista
+                </button>
+                ${job.status === 'pending' ? `
+                  <button onclick="applyDirectly(${job.id})" class="py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition" title="Candidatar Automaticamente">
+                    <i class="fa-solid fa-paper-plane"></i>
+                  </button>
+                ` : ''}
+                <a href="${job.url}" target="_blank" class="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 text-xs font-semibold transition" title="Abrir Anúncio Original">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+              </div>
+
+              <!-- SELETOR DE STATUS RÁPIDO -->
+              <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+                <span>Mover status:</span>
+                <select onchange="updateJobStatus(${job.id}, this.value)" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-300 focus:outline-none">
+                  <option value="pending" ${job.status === 'pending' ? 'selected' : ''}>Pendente</option>
+                  <option value="applied" ${job.status === 'applied' ? 'selected' : ''}>Aplicada</option>
+                  <option value="interview" ${job.status === 'interview' ? 'selected' : ''}>Entrevista 🎉</option>
+                  <option value="offer" ${job.status === 'offer' ? 'selected' : ''}>Oferta 🚀</option>
+                  <option value="rejected" ${job.status === 'rejected' ? 'selected' : ''}>Rejeitada</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderKanban() {
+      const statuses = ['pending', 'applied', 'interview', 'offer', 'rejected'];
+      const counts = { pending: 0, applied: 0, interview: 0, offer: 0, rejected: 0 };
+
+      statuses.forEach(st => {
+        const colContainer = document.getElementById(`items-${st}`);
+        const list = allJobs.filter(j => j.status === st);
+        counts[st] = list.length;
+        document.getElementById(`badge-${st}`).innerText = list.length;
+
+        if (!list.length) {
+          colContainer.innerHTML = `
+            <div class="py-8 text-center text-slate-600 text-xs italic">
+              Arraste cards para cá
+            </div>
+          `;
+          return;
+        }
+
+        colContainer.innerHTML = list.map(job => {
+          const score = job.fit_score || 0;
+          const badgeColor = getFitBadge(score);
+
+          return `
+            <div draggable="true" ondragstart="handleDragStart(event, ${job.id})" class="job-card-drag glass-card bg-slate-900/90 hover:bg-slate-800/90 rounded-xl p-3.5 border border-slate-800 hover:border-slate-600 text-xs shadow-md">
+              <div class="flex items-center justify-between mb-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${badgeColor}">
+                  Fit ${score}%
+                </span>
+                <a href="${job.url}" target="_blank" class="text-slate-500 hover:text-white" title="Ver Vaga">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+              </div>
+
+              <div class="font-bold text-white mb-0.5 line-clamp-1" title="${job.title}">${job.title}</div>
+              <div class="text-blue-400 font-semibold mb-2">${job.company}</div>
+
+              <div class="text-slate-400 text-[11px] mb-3 flex items-center justify-between">
+                <span><i class="fa-solid fa-location-dot mr-1"></i>${job.location || 'Remoto'}</span>
+                <span class="capitalize text-slate-500">${job.platform}</span>
+              </div>
+
+              <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1 text-[11px]">
+                <button onclick="openOutreachModal(${job.id})" class="text-indigo-400 hover:text-indigo-300" title="Contato / Networking">
+                  <i class="fa-solid fa-comments"></i>
+                </button>
+                <button onclick="openPrepModal(${job.id})" class="text-amber-400 hover:text-amber-300" title="Preparar Entrevista">
+                  <i class="fa-solid fa-graduation-cap"></i>
+                </button>
+                <a href="/api/jobs/${job.id}/resume" target="_blank" class="text-blue-400 hover:text-blue-300" title="Currículo PDF">
+                  <i class="fa-solid fa-file-pdf"></i>
+                </a>
+                <button onclick="openRoadmapModal(${job.id})" class="text-purple-400 hover:text-purple-300" title="Sprint de Gaps">
+                  <i class="fa-solid fa-rocket"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      });
+    }
+
+    // DRAG AND DROP HANDLERS
+    let draggedJobId = null;
+
+    function handleDragStart(e, jobId) {
+      draggedJobId = jobId;
+      e.dataTransfer.setData('text/plain', jobId);
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function allowDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('drag-over');
+    }
+
+    function dragLeave(e) {
+      e.currentTarget.classList.remove('drag-over');
+    }
+
+    async function handleDrop(e, targetStatus) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      if (!draggedJobId) return;
+
+      const jobId = draggedJobId;
+      draggedJobId = null;
+
+      const job = allJobs.find(j => j.id == jobId);
+      if (job && job.status !== targetStatus) {
+        job.status = targetStatus;
+        renderKanban();
+        await updateJobStatus(jobId, targetStatus);
+      }
+    }
+
+    async function analyzeJob() {
+      const urlInput = document.getElementById('jobUrlInput');
+      const btn = document.getElementById('analyzeBtn');
+      const feedback = document.getElementById('analyzeFeedback');
+      const url = urlInput.value.trim();
+
+      if (!url) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analisando com IA...';
+      feedback.className = 'mt-3 text-xs text-blue-400';
+      feedback.innerText = 'Extraindo requisitos da vaga, calculando compatibilidade e gerando currículo sob medida...';
+      feedback.classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/jobs/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        if (res.ok) {
+          const job = await res.json();
+          feedback.className = 'mt-3 text-xs text-emerald-400 font-semibold';
+          feedback.innerText = `✓ Vaga '${job.title}' analisada com sucesso! Fit Score: ${job.fit_score}%.`;
+          urlInput.value = '';
+          await loadData();
+        } else {
+          feedback.className = 'mt-3 text-xs text-red-400';
+          feedback.innerText = 'Falha ao analisar a vaga. Verifique a URL informada.';
+        }
+      } catch (e) {
+        feedback.className = 'mt-3 text-xs text-red-400';
+        feedback.innerText = 'Erro de conexão com o servidor local.';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Analisar Vaga';
+      }
+    }
+
+    async function applyDirectly(jobId) {
+      const job = allJobs.find(j => j.id == jobId);
+      if (!confirm(`Deseja iniciar a candidatura automática para '${job ? job.title : jobId}'? O agente abrirá o navegador e preencherá os dados em segundo plano.`)) return;
+
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/apply`, { method: 'POST' });
+        const data = await res.json();
+        alert(data.message || 'Candidatura iniciada!');
+        setTimeout(loadData, 3000);
+      } catch (e) {
+        alert('Erro ao disparar candidatura.');
+      }
+    }
+
+    async function updateJobStatus(jobId, newStatus) {
+      try {
+        await fetch(`/api/jobs/${jobId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        await loadStats();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function triggerHunt() {
+      const btn = document.getElementById('huntBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Caçando vagas...';
+      try {
+        await fetch('/api/hunt', { method: 'POST' });
+        alert('Caçador autônomo iniciado em segundo plano! Novas vagas compatíveis serão notificadas no Telegram e adicionadas aqui.');
+        setTimeout(loadData, 5000);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-radar animate-pulse"></i> Caçador Automático';
+      }
+    }
+
+    function openLetterModal(jobId) {
+      const job = allJobs.find(j => j.id == jobId);
+      if (!job) return;
+      document.getElementById('modalLetterTitle').innerHTML = `<i class="fa-solid fa-envelope text-blue-400 mr-2"></i> Carta de Apresentação: ${job.title} @ ${job.company}`;
+      document.getElementById('modalLetterContent').innerText = job.cover_letter || 'Nenhuma carta de apresentação gerada ainda.';
+      document.getElementById('modalLetter').classList.remove('hidden');
+    }
+
+    async function openPrepModal(jobId) {
+      const job = allJobs.find(j => j.id == jobId);
+      if (!job) return;
+      document.getElementById('modalPrepTitle').innerHTML = `<i class="fa-solid fa-graduation-cap text-amber-400 mr-2"></i> Preparação para Entrevista: ${job.company}`;
+      document.getElementById('modalPrepContent').innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-amber-400 block"></i>Gerando guia de entrevista com IA...</div>';
+      document.getElementById('modalPrep').classList.remove('hidden');
+
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/interview-prep`);
+        const data = await res.json();
+        document.getElementById('modalPrepContent').innerText = data.guide_markdown;
+      } catch (e) {
+        document.getElementById('modalPrepContent').innerText = 'Erro ao gerar o guia de entrevista.';
+      }
+    }
+
+    async function openOutreachModal(jobId) {
+      const job = allJobs.find(j => j.id == jobId);
+      if (!job) return;
+      document.getElementById('modalOutreachTitle').innerHTML = `<i class="fa-solid fa-comments text-indigo-400 mr-2"></i> Mensagens Estratégicas: ${job.company}`;
+      document.getElementById('outreachContent').innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-indigo-400 block"></i>Gerando mensagens personalizadas de contato...</div>';
+      document.getElementById('modalOutreach').classList.remove('hidden');
+
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/outreach`);
+        currentOutreachData = await res.json();
+        switchOutreachTab('note');
+      } catch (e) {
+        document.getElementById('outreachContent').innerText = 'Erro ao carregar mensagens de contato.';
+      }
+    }
+
+    function switchOutreachTab(tab) {
+      if (!currentOutreachData) return;
+      const tabs = ['note', 'inmail', 'cold', 'followup', 'thankyou'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tab) {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white flex items-center gap-1';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1';
+        }
+      });
+
+      const contentBox = document.getElementById('outreachContent');
+      const noticeBox = document.getElementById('charCountNotice');
+
+      if (tab === 'note') {
+        const text = currentOutreachData.linkedin_connection_note || '';
+        contentBox.innerText = text;
+        const len = text.length;
+        noticeBox.innerHTML = `<span class="${len <= 300 ? 'text-emerald-400' : 'text-rose-400'} font-bold">${len}/300 caracteres</span> (Ideal para a nota do convite de conexão do LinkedIn)`;
+      } else if (tab === 'inmail') {
+        contentBox.innerText = currentOutreachData.linkedin_inmail || '';
+        noticeBox.innerHTML = `Mensagem direta completa para InMail ou após o aceite de conexão.`;
+      } else if (tab === 'cold') {
+        contentBox.innerText = currentOutreachData.cold_email_hiring_manager || '';
+        noticeBox.innerHTML = `Cold email estruturado para o Tech Lead ou Gerente de Engenharia da vaga.`;
+      } else if (tab === 'followup') {
+        contentBox.innerText = currentOutreachData.follow_up_7days || '';
+        noticeBox.innerHTML = `Mensagem elegante para envio 7 dias após o envio da candidatura sem resposta.`;
+      } else if (tab === 'thankyou') {
+        contentBox.innerText = currentOutreachData.thank_you_interview || '';
+        noticeBox.innerHTML = `Mensagem pós-entrevista destacando prontidão e entusiasmo para envio nas primeiras 4 horas.`;
+      }
+    }
+
+    async function openRoadmapModal(jobId) {
+      const job = allJobs.find(j => j.id == jobId);
+      if (!job) return;
+      document.getElementById('modalRoadmapTitle').innerHTML = `<i class="fa-solid fa-rocket text-purple-400 mr-2"></i> Sprint de 7 Dias: ${job.company}`;
+      document.getElementById('modalRoadmapContent').innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-purple-400 block"></i>Gerando roteiro de aceleração para as lacunas da vaga...</div>';
+      document.getElementById('modalRoadmap').classList.remove('hidden');
+
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/roadmap`);
+        const data = await res.json();
+        document.getElementById('modalRoadmapContent').innerText = data.roadmap_markdown;
+      } catch (e) {
+        document.getElementById('modalRoadmapContent').innerText = 'Erro ao gerar o roadmap de estudo.';
+      }
+    }
+
+    async function openProfileModal() {
+      document.getElementById('modalProfile').classList.remove('hidden');
+      document.getElementById('profileSaveFeedback').innerText = 'Carregando perfil...';
+      try {
+        const res = await fetch('/api/profile');
+        const p = await res.json();
+        fullProfileCache = p;
+        document.getElementById('profFullName').value = p.personal_info.full_name || '';
+        document.getElementById('profEmail').value = p.personal_info.email || '';
+        document.getElementById('profPhone').value = p.personal_info.phone || '';
+        document.getElementById('profLocation').value = `${p.personal_info.city || ''}, ${p.personal_info.state || ''}`.replace(/^, |, $/g, '');
+        document.getElementById('profLinkedIn').value = p.links.linkedin || '';
+        document.getElementById('profGitHub').value = p.links.github || '';
+        document.getElementById('profSkillsPrimary').value = (p.skills.primary || []).join(', ');
+        document.getElementById('profSkillsSecondary').value = (p.skills.secondary || []).join(', ');
+        document.getElementById('profSummary').value = p.professional_summary || '';
+        document.getElementById('profileSaveFeedback').innerText = '';
+      } catch (e) {
+        document.getElementById('profileSaveFeedback').innerText = 'Erro ao carregar perfil.';
+      }
+    }
+
+    async function saveProfile() {
+      if (!fullProfileCache) return;
+      const feedback = document.getElementById('profileSaveFeedback');
+      feedback.className = 'text-xs text-blue-400';
+      feedback.innerText = 'Salvando alterações...';
+
+      fullProfileCache.personal_info.full_name = document.getElementById('profFullName').value.trim();
+      fullProfileCache.personal_info.email = document.getElementById('profEmail').value.trim();
+      fullProfileCache.personal_info.phone = document.getElementById('profPhone').value.trim();
+      
+      const locParts = document.getElementById('profLocation').value.split(',');
+      fullProfileCache.personal_info.city = locParts[0] ? locParts[0].trim() : '';
+      fullProfileCache.personal_info.state = locParts[1] ? locParts[1].trim() : '';
+
+      fullProfileCache.links.linkedin = document.getElementById('profLinkedIn').value.trim();
+      fullProfileCache.links.github = document.getElementById('profGitHub').value.trim();
+
+      fullProfileCache.skills.primary = document.getElementById('profSkillsPrimary').value.split(',').map(s => s.trim()).filter(Boolean);
+      fullProfileCache.skills.secondary = document.getElementById('profSkillsSecondary').value.split(',').map(s => s.trim()).filter(Boolean);
+      fullProfileCache.professional_summary = document.getElementById('profSummary').value.trim();
+
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(fullProfileCache)
+        });
+        if (res.ok) {
+          feedback.className = 'text-xs text-emerald-400 font-semibold';
+          feedback.innerText = '✓ Perfil atualizado com sucesso no profile.yaml!';
+          setTimeout(() => closeModal('modalProfile'), 1200);
+        } else {
+          feedback.className = 'text-xs text-red-400';
+          feedback.innerText = 'Erro ao salvar perfil no servidor.';
+        }
+      } catch (e) {
+        feedback.className = 'text-xs text-red-400';
+        feedback.innerText = 'Falha de conexão com o servidor local.';
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function copyToClipboard(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const text = el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copiado para a área de transferência!');
+      }).catch(err => {
+        console.error(err);
+      });
+    }
+
+    // Inicialização
+    loadData();
+  </script>
+</body>
+</html>

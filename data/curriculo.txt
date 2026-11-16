@@ -1,0 +1,15 @@
+CURRÍCULO - CARLOS EDUARDO DA SILVA
+Email: carlos.silva.dev@exemplo.com | Telefone: (11) 98765-4321
+São Paulo, SP | LinkedIn: linkedin.com/in/carlos-silva-dev | GitHub: github.com/carlos-silva-dev
+
+RESUMO:
+Desenvolvedor de Software com 4 anos de experiência com foco em Python, Node.js, Docker e bancos de dados SQL/NoSQL.
+Experiência na criação de APIs RESTful e automação de processos.
+
+EXPERIÊNCIA PROFISSIONAL:
+Tech Solutions Ltda (2022 - Atual) - Desenvolvedor Backend Pleno
+- Microsserviços em FastAPI e Node.js
+- Banco de dados PostgreSQL e Redis
+
+Inova Web (2020 - 2022) - Desenvolvedor Júnior
+- Manutenção de APIs e integrações REST

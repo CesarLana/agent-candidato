@@ -1,0 +1,39 @@
+# Ambientes Virtuais
+venv/
+env/
+.venv/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# Arquivos de Ambiente e Segredos
+.env
+.env.local
+*.key
+
+# Perfil do Navegador Playwright (Cookies, Sessões locais)
+data/browser_profile/
+browser_profile/
+
+# Dados Locais e Banco SQLite
+data/applications.db
+data/*.sqlite
+data/*.csv
+data/candidaturas_exportadas.csv
+
+# PDFs e Relatórios Gerados Dinamicamente
+data/curriculo_*.pdf
+data/curriculo.pdf
+data/preparacao_entrevista_*.md
+data/roadmap_estudos_*.md
+
+# Logs
+*.log
+logs/
+
+# Arquivo de Perfil do Usuário com dados pessoais (Mantenha o profile.example.yaml no git)
+# Descomente a linha abaixo caso queira proteger seu profile.yaml pessoal:
+# config/profile.yaml

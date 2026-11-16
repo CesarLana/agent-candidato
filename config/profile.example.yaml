@@ -1,0 +1,83 @@
+# ==============================================================================
+# PERFIL DO CANDIDATO (Utilizado pela IA para preencher formulários e calcular fit)
+# ==============================================================================
+
+personal_info:
+  first_name: "Carlos"
+  last_name: "Silva"
+  full_name: "Carlos Eduardo da Silva"
+  email: "carlos.silva.dev@exemplo.com"
+  phone: "+55 (11) 98765-4321"
+  city: "São Paulo"
+  state: "SP"
+  country: "Brasil"
+  postal_code: "01310-100"
+  address: "Av. Paulista, 1000"
+
+links:
+  linkedin: "https://www.linkedin.com/in/carlos-silva-dev"
+  github: "https://github.com/carlos-silva-dev"
+  portfolio: "https://carlossilva.dev"
+  other: ""
+
+documents:
+  # Caminho para o seu currículo em PDF (relativo ou absoluto)
+  resume_pdf_path: "data/curriculo.pdf"
+
+professional_summary: >
+  Desenvolvedor de Software com 4 anos de experiência com foco em Python, 
+  Node.js, Docker e bancos de dados SQL/NoSQL. Experiência na criação de APIs RESTful, 
+  microsserviços escaláveis e automações de processos. Inglês avançado para comunicação.
+
+skills:
+  primary:
+    - "Python"
+    - "JavaScript"
+    - "TypeScript"
+    - "FastAPI"
+    - "Node.js"
+    - "Docker"
+    - "PostgreSQL"
+    - "Git"
+  secondary:
+    - "AWS"
+    - "Redis"
+    - "React"
+    - "Linux"
+    - "CI/CD"
+
+preferences:
+  target_roles:
+    - "Desenvolvedor Backend"
+    - "Software Engineer"
+    - "Python Developer"
+    - "Backend Engineer"
+    - "Full Stack Developer"
+  work_modalities:
+    - "Remoto"
+    - "Híbrido"
+  min_fit_score: 65 # Nota de corte mínima (0 a 100) para submeter candidatura
+
+# Respostas padrão para perguntas frequentes de recrutamento (FAQ)
+faq_answers:
+  salary_expectation: "R$ 8.500,00 CLT ou R$ 12.000,00 PJ"
+  salary_number: "8500"
+  notice_period: "Disponibilidade imediata / 15 dias"
+  english_level: "Avançado / Fluente"
+  work_authorization: "Sim, cidadão brasileiro residente no Brasil"
+  sponsorship_required: "Não"
+  years_experience_general: "4"
+  education_level: "Ensino Superior Completo em Ciência da Computação"
+  gender: "Prefiro não informar"
+  race_ethnicity: "Prefiro não informar"
+  disability: "Não"
+
+experiences:
+  - company: "Tech Solutions Ltda"
+    role: "Desenvolvedor Backend Pleno"
+    period: "2022 - Atual"
+    description: "Desenvolvimento de microsserviços em FastAPI e Node.js. Otimização de consultas SQL reduzindo tempo de resposta em 40%."
+  - company: "Inova Web"
+    role: "Desenvolvedor Júnior"
+    period: "2020 - 2022"
+    description: "Manutenção de APIs, integração com gateways de pagamento e criação de rotinas automatizadas em Python."
