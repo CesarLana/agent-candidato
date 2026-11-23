@@ -16,6 +16,7 @@ def search_linkedin_jobs(
     location: str = "Brazil",
     remote_only: bool = False,
     max_results: int = 15,
+    start: int = 0,
 ) -> List[Job]:
     """Busca vagas públicas no LinkedIn.
 
@@ -24,6 +25,7 @@ def search_linkedin_jobs(
         location: Localidade (ex: "São Paulo", "Brazil").
         remote_only: Se True, filtra apenas oportunidades remotas.
         max_results: Quantidade máxima de vagas para retornar.
+        start: Índice inicial para paginação (ex: 0, 25).
 
     Returns:
         Lista de instâncias Job com título, empresa, URL e local.
@@ -34,7 +36,7 @@ def search_linkedin_jobs(
     params: Dict[str, str] = {
         "keywords": keywords,
         "location": location,
-        "start": "0",
+        "start": str(start),
         "sortBy": "DD", # Vagas mais recentes primeiro
     }
 

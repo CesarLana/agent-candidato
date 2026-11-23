@@ -6,7 +6,7 @@ roadmap de estudo para lacunas técnicas, download de currículos sob medida e c
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
@@ -28,6 +28,8 @@ from core.salary_advisor import SalaryAdvisor
 from core.skill_roadmap import SkillGapRoadmap
 from scheduler.hunter import JobHunterDaemon
 from scrapers import fetch_job_details
+from scrapers.gupy import search_gupy_jobs
+from scrapers.linkedin_search import search_linkedin_jobs
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -48,6 +50,13 @@ app.add_middleware(
 
 class AnalyzeJobRequest(BaseModel):
     url: str
+
+
+class SearchJobsRequest(BaseModel):
+    keyword: str
+    location: str = "São Paulo"
+    platforms: List[str] = ["linkedin", "gupy"]
+    max_results: int = 15
 
 
 class UpdateStatusRequest(BaseModel):
@@ -98,12 +107,103 @@ def api_get_stats():
     }
 
 
+@app.post("/api/jobs/search-live")
+def api_search_live(req: SearchJobsRequest):
+    """Busca vagas em tempo real no LinkedIn e Gupy com IA e salva no banco SQLite."""
+    keyword = req.keyword.strip()
+    if not keyword:
+        raise HTTPException(status_code=400, detail="Digite uma palavra-chave para buscar.")
+
+    profile = load_candidate_profile()
+    llm = LLMEngine()
+    discovered_jobs: List[Job] = []
+
+    # 1. Busca no LinkedIn se selecionado
+    if "linkedin" in req.platforms:
+        try:
+            li_local = search_linkedin_jobs(
+                keywords=keyword,
+                location=req.location,
+                remote_only=False,
+                max_results=req.max_results,
+            )
+            discovered_jobs.extend(li_local)
+        except Exception:
+            pass
+
+        # Se São Paulo ou Remoto, busca também vagas remotas Brasil
+        loc_lower = req.location.lower()
+        if "são paulo" in loc_lower or "sp" in loc_lower or "remoto" in loc_lower or "brasil" in loc_lower:
+            try:
+                li_rem = search_linkedin_jobs(
+                    keywords=keyword,
+                    location="Brazil",
+                    remote_only=True,
+                    max_results=max(5, req.max_results // 2),
+                )
+                discovered_jobs.extend(li_rem)
+            except Exception:
+                pass
+
+    # 2. Busca na Gupy se selecionada
+    if "gupy" in req.platforms:
+        try:
+            gupy_jobs = search_gupy_jobs(term=keyword, max_results=req.max_results)
+            discovered_jobs.extend(gupy_jobs)
+        except Exception:
+            pass
+
+    new_saved_jobs = []
+    skipped_count = 0
+
+    for raw_job in discovered_jobs:
+        existing = get_job_by_url(raw_job.url)
+        if existing:
+            skipped_count += 1
+            continue
+
+        full_job = fetch_job_details(raw_job.url) or raw_job
+        score, summary, matched, missing = llm.evaluate_fit(full_job, profile)
+        full_job.fit_score = score
+        full_job.fit_summary = summary
+        full_job.skills_matched = matched
+        full_job.skills_missing = missing
+
+        # Salva a vaga
+        saved = save_job(full_job)
+        new_saved_jobs.append(saved.dict())
+
+    return {
+        "success": True,
+        "keyword": keyword,
+        "total_discovered": len(discovered_jobs),
+        "new_saved": len(new_saved_jobs),
+        "already_existing": skipped_count,
+        "jobs": new_saved_jobs,
+    }
+
+
 @app.post("/api/jobs/analyze")
 def api_analyze_job(req: AnalyzeJobRequest):
-    """Analisa uma vaga pela URL, calcula fit score e salva no banco."""
+    """Analisa uma vaga pela URL ou executa busca se for palavra-chave / link de pesquisa."""
     url = req.url.strip()
     if not url:
-        raise HTTPException(status_code=400, detail="URL inválida.")
+        raise HTTPException(status_code=400, detail="Digite uma URL ou termo de busca.")
+
+    # Se não for URL (ex: digitou apenas "DevOps" ou "Infraestrutura")
+    if not url.startswith("http://") and not url.startswith("https://"):
+        return api_search_live(SearchJobsRequest(keyword=url))
+
+    # Se for uma URL de pesquisa de vagas do LinkedIn ou Gupy
+    if "linkedin.com/jobs/search" in url or "portal.gupy.io/job-search" in url:
+        import urllib.parse
+        parsed = urllib.parse.urlparse(url)
+        params = urllib.parse.parse_qs(parsed.query)
+        kw = params.get("keywords", [""])[0] or params.get("term", [""])[0]
+        if not kw and "term=" in url:
+            kw = url.split("term=")[-1].split("&")[0]
+        if kw:
+            return api_search_live(SearchJobsRequest(keyword=urllib.parse.unquote(kw)))
 
     profile = load_candidate_profile()
     llm = LLMEngine()

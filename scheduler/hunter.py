@@ -38,29 +38,53 @@ class JobHunterDaemon:
         """Executa um ciclo completo de varredura por novas vagas."""
         console.print(f"\n[bold cyan]⏰ [{datetime.now().strftime('%H:%M:%S')}] Iniciando ciclo do Caçador de Vagas...[/]")
 
-        target_roles = self.profile.preferences.target_roles or ["Desenvolvedor"]
+        target_roles = self.profile.preferences.target_roles or [
+            "Analista de Infraestrutura Jr.",
+            "DevOps Jr.",
+            "Analista de Suporte Jr.",
+            "Cloud Engineer Jr.",
+        ]
         is_remote = "Remoto" in self.profile.preferences.work_modalities
-        min_score = self.profile.preferences.min_fit_score or 65
+        min_score = self.profile.preferences.min_fit_score or 55
 
         found_qualified_jobs: List[Job] = []
 
-        for role in target_roles[:4]:  # Varre os 4 primeiros cargos prioritários
+        for role in target_roles[:6]:  # Varre até 6 cargos prioritários
             console.print(f"[cyan]Buscando vagas para:[/] [bold]{role}[/]...")
 
-            # 1. Busca no LinkedIn (Remoto e São Paulo)
-            discovered_jobs = search_linkedin_jobs(
-                keywords=role,
-                location="São Paulo" if not is_remote else "Brazil",
-                remote_only=is_remote,
-                max_results=10,
-            )
+            discovered_jobs = []
 
-            # 2. Busca também no portal oficial da Gupy
+            # 1. Busca no LinkedIn em São Paulo (Presencial e Híbrido)
             try:
-                gupy_results = search_gupy_jobs(term=role, max_results=8)
+                li_sp = search_linkedin_jobs(
+                    keywords=role,
+                    location="São Paulo",
+                    remote_only=False,
+                    max_results=10,
+                )
+                discovered_jobs.extend(li_sp)
+            except Exception as e:
+                console.print(f"  [dim]Aviso LinkedIn SP: {e}[/dim]")
+
+            # 2. Se aberto a remoto, busca também no LinkedIn Remoto Brasil
+            if is_remote:
+                try:
+                    li_remoto = search_linkedin_jobs(
+                        keywords=role,
+                        location="Brazil",
+                        remote_only=True,
+                        max_results=8,
+                    )
+                    discovered_jobs.extend(li_remoto)
+                except Exception as e:
+                    console.print(f"  [dim]Aviso LinkedIn Remoto: {e}[/dim]")
+
+            # 3. Busca no portal oficial da Gupy
+            try:
+                gupy_results = search_gupy_jobs(term=role, max_results=10)
                 discovered_jobs.extend(gupy_results)
-            except Exception:
-                pass
+            except Exception as e:
+                console.print(f"  [dim]Aviso Gupy: {e}[/dim]")
 
             for raw_job in discovered_jobs:
                 # 1. Verifica se já está no banco para evitar duplicidade

@@ -61,18 +61,63 @@
 
   <div class="max-w-7xl mx-auto px-6 space-y-8">
 
-    <!-- BARRA DE ANÁLISE RÁPIDA -->
-    <div class="glass-card rounded-2xl p-6 shadow-xl">
-      <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-        <i class="fa-solid fa-link text-blue-400 mr-1"></i> Analisar Nova Vaga (Gupy, Greenhouse, Lever, LinkedIn, WeWorkRemotely, etc.)
-      </h2>
-      <div class="flex flex-col sm:flex-row gap-3">
-        <input type="url" id="jobUrlInput" placeholder="Cole a URL da vaga aqui (ex: https://boards.greenhouse.io/empresa/jobs/123)..." class="flex-1 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500">
-        <button onclick="analyzeJob()" id="analyzeBtn" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> Analisar Vaga
-        </button>
+    <!-- CENTRAL DE BUSCA & ANÁLISE DE VAGAS -->
+    <div class="glass-card rounded-2xl p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex gap-2">
+          <button type="button" onclick="switchSearchMode('search')" id="tabModeSearch" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white flex items-center gap-1.5 shadow-md shadow-blue-600/30">
+            <i class="fa-solid fa-magnifying-glass"></i> 1. Buscar no LinkedIn & Gupy
+          </button>
+          <button type="button" onclick="switchSearchMode('url')" id="tabModeUrl" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white flex items-center gap-1.5">
+            <i class="fa-solid fa-link"></i> 2. Analisar por Link (URL)
+          </button>
+        </div>
+        <span class="text-[11px] text-slate-400 hidden sm:inline">
+          <i class="fa-solid fa-bolt text-amber-400 mr-1"></i> Varredura ativa em tempo real
+        </span>
       </div>
-      <div id="analyzeFeedback" class="hidden mt-3 text-sm"></div>
+
+      <!-- MODO 1: BUSCA POR PALAVRA-CHAVE NO LINKEDIN E GUPY -->
+      <div id="boxModeSearch" class="space-y-3">
+        <div class="flex flex-col md:flex-row gap-3">
+          <div class="flex-1 relative">
+            <input type="text" id="jobSearchInput" placeholder="Digite o cargo ou tecnologia (ex: DevOps Jr, Infraestrutura, Suporte TI, AWS, Linux, Cloud)..." class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" onkeydown="if(event.key==='Enter') executeLiveSearch()">
+          </div>
+
+          <select id="searchLocation" class="bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-3 text-xs text-white focus:outline-none focus:border-blue-500">
+            <option value="São Paulo" selected>São Paulo & Remoto</option>
+            <option value="São Paulo">Apenas São Paulo</option>
+            <option value="Remoto">Apenas Remoto (Brasil)</option>
+          </select>
+
+          <div class="flex items-center gap-3 px-3 py-2 bg-slate-900/80 rounded-xl border border-slate-800 text-xs text-slate-300">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="checkSearchLinkedIn" checked class="rounded border-slate-700 text-blue-600 focus:ring-0">
+              <i class="fa-brands fa-linkedin text-blue-400"></i> LinkedIn
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="checkSearchGupy" checked class="rounded border-slate-700 text-blue-600 focus:ring-0">
+              <i class="fa-solid fa-briefcase text-emerald-400"></i> Gupy
+            </label>
+          </div>
+
+          <button onclick="executeLiveSearch()" id="searchLiveBtn" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 whitespace-nowrap">
+            <i class="fa-solid fa-magnifying-glass"></i> Buscar Vagas Agora
+          </button>
+        </div>
+      </div>
+
+      <!-- MODO 2: ANALISAR POR LINK DIRETO -->
+      <div id="boxModeUrl" class="hidden space-y-3">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input type="text" id="jobUrlInput" placeholder="Cole a URL da vaga (LinkedIn, Gupy, Greenhouse, Lever, etc.)..." class="flex-1 bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" onkeydown="if(event.key==='Enter') analyzeJob()">
+          <button onclick="analyzeJob()" id="analyzeBtn" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Analisar Link
+          </button>
+        </div>
+      </div>
+
+      <div id="searchFeedback" class="hidden text-xs py-2 px-3 rounded-lg border"></div>
     </div>
 
     <!-- CARDS DE MÉTRICAS -->
@@ -766,17 +811,95 @@
       }
     }
 
+    function switchSearchMode(mode) {
+      const tabSearch = document.getElementById('tabModeSearch');
+      const tabUrl = document.getElementById('tabModeUrl');
+      const boxSearch = document.getElementById('boxModeSearch');
+      const boxUrl = document.getElementById('boxModeUrl');
+
+      if (mode === 'search') {
+        tabSearch.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white flex items-center gap-1.5 shadow-md shadow-blue-600/30';
+        tabUrl.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white flex items-center gap-1.5';
+        boxSearch.classList.remove('hidden');
+        boxUrl.classList.add('hidden');
+      } else {
+        tabUrl.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white flex items-center gap-1.5 shadow-md shadow-indigo-600/30';
+        tabSearch.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white flex items-center gap-1.5';
+        boxUrl.classList.remove('hidden');
+        boxSearch.classList.add('hidden');
+      }
+    }
+
+    async function executeLiveSearch() {
+      const input = document.getElementById('jobSearchInput');
+      const keyword = input.value.trim();
+      const location = document.getElementById('searchLocation').value;
+      const useLinkedIn = document.getElementById('checkSearchLinkedIn').checked;
+      const useGupy = document.getElementById('checkSearchGupy').checked;
+      const btn = document.getElementById('searchLiveBtn');
+      const feedback = document.getElementById('searchFeedback');
+
+      if (!keyword) {
+        feedback.className = 'text-xs py-2 px-3 rounded-lg border bg-amber-950/40 border-amber-800/40 text-amber-300';
+        feedback.innerText = 'Digite um termo ou cargo para buscar (ex: DevOps, Infraestrutura, Suporte TI, AWS, Linux).';
+        feedback.classList.remove('hidden');
+        return;
+      }
+
+      const platforms = [];
+      if (useLinkedIn) platforms.push('linkedin');
+      if (useGupy) platforms.push('gupy');
+
+      if (platforms.length === 0) {
+        feedback.className = 'text-xs py-2 px-3 rounded-lg border bg-amber-950/40 border-amber-800/40 text-amber-300';
+        feedback.innerText = 'Selecione pelo menos uma plataforma (LinkedIn ou Gupy).';
+        feedback.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Varrendo LinkedIn & Gupy...';
+      feedback.className = 'text-xs py-2.5 px-3.5 rounded-lg border bg-blue-950/40 border-blue-800/40 text-blue-300 leading-relaxed';
+      feedback.innerHTML = `<i class="fa-solid fa-radar fa-spin mr-1.5"></i> Conectando aos portais do <strong>LinkedIn</strong> e <strong>Gupy</strong> para encontrar vagas de <em>${keyword}</em> em <em>${location}</em>...`;
+      feedback.classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/jobs/search-live', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keyword, location, platforms, max_results: 15 })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          feedback.className = 'text-xs py-2.5 px-3.5 rounded-lg border bg-emerald-950/40 border-emerald-800/40 text-emerald-300 font-medium';
+          feedback.innerHTML = `✓ <strong>Varredura Concluída!</strong> Encontradas <strong>${data.total_discovered} vagas</strong> no LinkedIn/Gupy. <strong>${data.new_saved} novas vagas</strong> foram analisadas com IA e salvas no banco (${data.already_existing} já estavam cadastradas).`;
+          await loadData();
+          await loadStats();
+        } else {
+          feedback.className = 'text-xs py-2 px-3 rounded-lg border bg-rose-950/40 border-rose-800/40 text-rose-300';
+          feedback.innerText = data.detail || 'Erro ao realizar a busca de vagas.';
+        }
+      } catch (e) {
+        feedback.className = 'text-xs py-2 px-3 rounded-lg border bg-rose-950/40 border-rose-800/40 text-rose-300';
+        feedback.innerText = 'Erro de comunicação com o servidor local.';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Buscar Vagas Agora';
+      }
+    }
+
     async function analyzeJob() {
       const urlInput = document.getElementById('jobUrlInput');
       const btn = document.getElementById('analyzeBtn');
-      const feedback = document.getElementById('analyzeFeedback');
+      const feedback = document.getElementById('searchFeedback');
       const url = urlInput.value.trim();
 
       if (!url) return;
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analisando com IA...';
-      feedback.className = 'mt-3 text-xs text-blue-400';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando com IA...';
+      feedback.className = 'text-xs py-2.5 px-3.5 rounded-lg border bg-blue-950/40 border-blue-800/40 text-blue-300';
       feedback.innerText = 'Extraindo requisitos da vaga, calculando compatibilidade e gerando currículo sob medida...';
       feedback.classList.remove('hidden');
 
@@ -787,21 +910,26 @@
           body: JSON.stringify({ url })
         });
         if (res.ok) {
-          const job = await res.json();
-          feedback.className = 'mt-3 text-xs text-emerald-400 font-semibold';
-          feedback.innerText = `✓ Vaga '${job.title}' analisada com sucesso! Fit Score: ${job.fit_score}%.`;
+          const result = await res.json();
+          feedback.className = 'text-xs py-2.5 px-3.5 rounded-lg border bg-emerald-950/40 border-emerald-800/40 text-emerald-300 font-medium';
+          if (result.total_discovered !== undefined) {
+            feedback.innerHTML = `✓ <strong>Busca realizada com sucesso!</strong> Encontradas <strong>${result.total_discovered} vagas</strong> (${result.new_saved} novas importadas).`;
+          } else {
+            feedback.innerText = `✓ Vaga '${result.title}' analisada com sucesso! Fit Score: ${result.fit_score}%.`;
+          }
           urlInput.value = '';
           await loadData();
+          await loadStats();
         } else {
-          feedback.className = 'mt-3 text-xs text-red-400';
+          feedback.className = 'text-xs py-2 px-3 rounded-lg border bg-rose-950/40 border-rose-800/40 text-rose-300';
           feedback.innerText = 'Falha ao analisar a vaga. Verifique a URL informada.';
         }
       } catch (e) {
-        feedback.className = 'mt-3 text-xs text-red-400';
-        feedback.innerText = 'Erro de conexão com o servidor local.';
+        feedback.className = 'text-xs py-2 px-3 rounded-lg border bg-rose-950/40 border-rose-800/40 text-rose-300';
+        feedback.innerText = 'Erro ao processar requisição com o servidor.';
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Analisar Vaga';
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Analisar Link';
       }
     }
 
