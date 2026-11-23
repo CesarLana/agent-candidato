@@ -18,35 +18,51 @@ class SalaryAdvisor:
         """Gera recomendações de pretensão e scripts de negociação para a vaga."""
         role_lower = (job.title + " " + (job.description or "")).lower()
 
-        # Determina faixa média de mercado (SP / Brasil) para o nível do candidato
         is_devops = any(w in role_lower for w in ["devops", "sre", "cloud"])
         is_infra = any(w in role_lower for w in ["infra", "infraestrutura", "redes", "sysadmin"])
         is_support = any(w in role_lower for w in ["suporte", "service desk", "help desk"])
 
+        # Faixa calibrada diretamente com o perfil do candidato (R$ 2.500 a R$ 3.500 CLT)
+        try:
+            clt_min = float(self.profile.faq_answers.get("salary_min", 2500))
+        except (ValueError, TypeError):
+            clt_min = 2500.0
+
+        try:
+            clt_max = float(self.profile.faq_answers.get("salary_max", 3500))
+        except (ValueError, TypeError):
+            clt_max = 3500.0
+
+        try:
+            clt_target = float(self.profile.faq_answers.get("salary_number", (clt_min + clt_max) / 2))
+        except (ValueError, TypeError):
+            clt_target = 3000.0
+
+        try:
+            pj_target = float(self.profile.faq_answers.get("salary_pj", clt_target * 1.4))
+        except (ValueError, TypeError):
+            pj_target = 4500.0
+
         if is_devops:
-            clt_min, clt_target, clt_max = 4500, 5500, 6500
-            pj_target = 8000
             level_name = "DevOps / Cloud Jr."
         elif is_infra:
-            clt_min, clt_target, clt_max = 3800, 4600, 5500
-            pj_target = 6800
             level_name = "Analista de Infraestrutura Jr."
         elif is_support:
-            clt_min, clt_target, clt_max = 2800, 3500, 4200
-            pj_target = 5000
             level_name = "Analista de Suporte Técnico / N2"
         else:
-            clt_min, clt_target, clt_max = 3500, 4500, 5500
-            pj_target = 6500
             level_name = "Tecnologia da Informação Jr."
 
+        s_min_str = f"{int(clt_min):_}".replace("_", ".")
+        s_max_str = f"{int(clt_max):_}".replace("_", ".")
+        s_tgt_str = f"{int(clt_target):_}".replace("_", ".")
+
         # Scripts de negociação
-        form_script = f"R$ {clt_target:,.2f} CLT (aberto a propostas de acordo com o pacote de benefícios)".replace(",", "X").replace(".", ",").replace("X", ".")
+        form_script = f"R$ {s_tgt_str},00 CLT (aberto a propostas na faixa de R$ {s_min_str} a R$ {s_max_str} conforme benefícios)"
         
         hr_call_script = (
-            f"Hoje minha pretensão está na faixa de R$ {clt_min:,.0f} a R$ {clt_max:,.0f} CLT, "
+            f"Minha pretensão salarial está na faixa de R$ {s_min_str} a R$ {s_max_str} CLT, "
             f"mas tenho total flexibilidade dependendo do modelo de contratação e do pacote de benefícios oferecido pela {job.company}. "
-            "Meu principal foco hoje é somar na infraestrutura e colocar em prática minha bagagem em AWS e automação."
+            "Meu principal foco hoje é somar na infraestrutura e colocar em prática minha bagagem prática em AWS, Linux e automação."
         )
 
         pitch_justification = [

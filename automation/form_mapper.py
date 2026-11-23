@@ -142,7 +142,7 @@ class FormMapper:
         elif field_type == "postal_code":
             return p.postal_code
         elif field_type == "salary":
-            return self.profile.faq_answers.get("salary_number", self.profile.faq_answers.get("salary_expectation", "8000"))
+            return self.profile.faq_answers.get("salary_number", self.profile.faq_answers.get("salary_expectation", "3000"))
         elif field_type == "cover_letter":
             if not job.cover_letter:
                 job.cover_letter = self.llm.generate_cover_letter(job, self.profile)

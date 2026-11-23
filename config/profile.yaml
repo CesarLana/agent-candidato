@@ -78,8 +78,11 @@ preferences:
   min_fit_score: 55
 
 faq_answers:
-  salary_expectation: "A combinar / dentro da faixa da vaga"
-  salary_number: "4000"
+  salary_expectation: "R$ 3.000,00 CLT (aberto a propostas na faixa de R$ 2.500 a R$ 3.500)"
+  salary_number: "3000"
+  salary_min: "2500"
+  salary_max: "3500"
+  salary_pj: "4500"
   notice_period: "Disponibilidade imediata"
   english_level: "Intermediário – leitura e interpretação de documentação técnica"
   work_authorization: "Sim, cidadão brasileiro residente no Brasil"

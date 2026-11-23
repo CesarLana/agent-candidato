@@ -358,6 +358,17 @@
           <input type="text" id="profSkillsSecondary" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
         </div>
 
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Pretensão Salarial Mínima (R$ CLT)</label>
+            <input type="number" id="profSalaryMin" placeholder="2500" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Pretensão Salarial Máxima (R$ CLT)</label>
+            <input type="number" id="profSalaryMax" placeholder="3500" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+          </div>
+        </div>
+
         <div>
           <label class="block text-slate-400 mb-1">Resumo Profissional</label>
           <textarea id="profSummary" rows="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white leading-relaxed"></textarea>
@@ -1360,6 +1371,8 @@
         document.getElementById('profGitHub').value = p.links.github || '';
         document.getElementById('profSkillsPrimary').value = (p.skills.primary || []).join(', ');
         document.getElementById('profSkillsSecondary').value = (p.skills.secondary || []).join(', ');
+        document.getElementById('profSalaryMin').value = p.faq_answers?.salary_min || '2500';
+        document.getElementById('profSalaryMax').value = p.faq_answers?.salary_max || '3500';
         document.getElementById('profSummary').value = p.professional_summary || '';
         document.getElementById('profileSaveFeedback').innerText = '';
       } catch (e) {
@@ -1386,6 +1399,16 @@
 
       fullProfileCache.skills.primary = document.getElementById('profSkillsPrimary').value.split(',').map(s => s.trim()).filter(Boolean);
       fullProfileCache.skills.secondary = document.getElementById('profSkillsSecondary').value.split(',').map(s => s.trim()).filter(Boolean);
+      
+      if (!fullProfileCache.faq_answers) fullProfileCache.faq_answers = {};
+      const sMin = document.getElementById('profSalaryMin').value.trim() || '2500';
+      const sMax = document.getElementById('profSalaryMax').value.trim() || '3500';
+      const sTarget = Math.round((parseFloat(sMin) + parseFloat(sMax)) / 2).toString();
+      fullProfileCache.faq_answers.salary_min = sMin;
+      fullProfileCache.faq_answers.salary_max = sMax;
+      fullProfileCache.faq_answers.salary_number = sTarget;
+      fullProfileCache.faq_answers.salary_expectation = `R$ ${sTarget},00 CLT (aberto a propostas na faixa de R$ ${sMin} a R$ ${sMax})`;
+
       fullProfileCache.professional_summary = document.getElementById('profSummary').value.trim();
 
       try {
