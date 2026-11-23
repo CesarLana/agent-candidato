@@ -170,58 +170,71 @@ class SessionManager:
         console.print("[bold yellow]→ Faça login normalmente na janela que abrir.[/]")
         console.print("[dim]O agente detectará automaticamente quando você estiver logado.[/]\n")
 
-        state_dir = self._state_dir(platform)
-        state_dir.mkdir(parents=True, exist_ok=True)
-
         self._playwright = sync_playwright().start()
-        
-        # Stealth: UserAgent real, viewport real, sem flags de automação
+
         browser_args = [
             "--disable-blink-features=AutomationControlled",
             "--disable-dev-shm-usage",
             "--no-first-run",
             "--no-default-browser-check",
+            "--window-size=1280,850",
         ]
         ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
         try:
-            context = self._playwright.chromium.launch_persistent_context(
-                user_data_dir=str(state_dir),
-                headless=False,  # Login SEMPRE precisa de tela visível
+            # Lança uma instância isolada e visível do Chromium (sem travar diretórios ou colidir com Chrome aberto)
+            browser = self._playwright.chromium.launch(
+                headless=False,
+                args=browser_args,
+            )
+            context = browser.new_context(
                 viewport={"width": 1280, "height": 850},
                 user_agent=ua,
                 locale="pt-BR",
-                args=browser_args,
             )
 
-            page = context.pages[0] if context.pages else context.new_page()
-            page.set_default_timeout(120000)  # 2 min timeout para login
+            page = context.new_page()
+            page.set_default_timeout(180000)  # 3 min timeout
 
             # Navega para a página de login
             page.goto(info["login_url"], wait_until="domcontentloaded")
 
-            # Aguarda o usuário completar o login (polling a cada 3s)
-            console.print("[bold cyan]⏳ Aguardando login...[/] (máximo 5 minutos)")
+            console.print("[bold cyan]⏳ Janela aberta. Faça seu login...[/] (detecção automática ativa)")
             max_wait = 300  # 5 minutos
             elapsed = 0
             logged_in = False
 
             while elapsed < max_wait:
-                time.sleep(3)
-                elapsed += 3
+                time.sleep(2)
+                elapsed += 2
 
-                # Verifica se está logado
+                # Se o usuário fechou a janela do navegador
+                if page.is_closed():
+                    console.print("[dim]Janela fechada pelo usuário. Verificando sessão...[/dim]")
+                    break
+
                 try:
-                    # Checa se existe algum elemento que indica login
+                    cookies = context.cookies()
+                    # 1. Checagem direta de cookies de autenticação
+                    if platform == "linkedin" and any(c.get("name") == "li_at" for c in cookies):
+                        logged_in = True
+                        break
+                    elif platform == "gupy" and any("auth" in c.get("name", "").lower() or "token" in c.get("name", "").lower() for c in cookies):
+                        logged_in = True
+                        break
+                    elif any(c.get("name") in ["session_id", "auth_token", "logged_in"] for c in cookies):
+                        logged_in = True
+                        break
+
+                    # 2. Checagem por elementos de tela
                     logged_in_el = page.query_selector(info["logged_in_selector"])
                     if logged_in_el:
                         logged_in = True
                         break
 
-                    # Checa se a URL mudou para uma área autenticada
+                    # 3. Mudança de URL para página autenticada
                     current_url = page.url.lower()
-                    if any(w in current_url for w in ["feed", "dashboard", "home", "area-candidato", "mypage"]):
-                        # Verifica se o indicador de logout sumiu
+                    if any(w in current_url for w in ["/feed", "/dashboard", "/home", "area-candidato", "minhas-vagas"]):
                         logout_el = page.query_selector(info["logged_out_indicator"])
                         if not logout_el:
                             logged_in = True
@@ -229,39 +242,47 @@ class SessionManager:
                 except Exception:
                     continue
 
-                # Feedback visual a cada 15s
                 if elapsed % 15 == 0:
-                    console.print(f"[dim]  ... aguardando ({elapsed}s)...[/dim]")
+                    console.print(f"[dim]  ... aguardando login ({elapsed}s)...[/dim]")
+
+            # Verificação final de cookies caso a janela tenha sido fechada
+            try:
+                cookies = context.cookies()
+                if not logged_in:
+                    if platform == "linkedin" and any(c.get("name") == "li_at" for c in cookies):
+                        logged_in = True
+                    elif platform == "gupy" and len(cookies) >= 4:
+                        logged_in = True
+            except Exception:
+                pass
 
             if logged_in:
-                console.print(f"[bold green]✅ Login no {info['name']} detectado com sucesso![/]")
-                
-                # Extrai info do usuário se possível
+                console.print(f"[bold green]✅ Login no {info['name']} confirmado com sucesso![/]")
                 user_info = self._extract_user_info(page, platform)
-                
-                # Salva os cookies e storage state
+
                 storage = context.storage_state()
-                
                 session_data = {
                     "platform": platform,
                     "saved_at": datetime.now().isoformat(),
-                    "user_info": user_info,
+                    "user_info": user_info or "Sessão Ativa",
                     "cookies_count": len(storage.get("cookies", [])),
                     "storage_state": storage,
                 }
-                
+
                 session_file = self._session_file(platform)
                 session_file.write_text(json.dumps(session_data, ensure_ascii=False, indent=2), encoding="utf-8")
-                
-                console.print(f"[green]💾 Sessão salva em: {session_file.name}[/]")
-                console.print(f"[dim]Cookies salvos: {session_data['cookies_count']}[/]")
-                if user_info:
-                    console.print(f"[cyan]👤 Logado como: {user_info}[/]")
-            else:
-                console.print(f"[red]❌ Tempo esgotado. Login no {info['name']} não detectado.[/]")
-                console.print("[yellow]Dica: Tente novamente ou verifique se o login foi concluído.[/]")
 
-            context.close()
+                console.print(f"[green]💾 Sessão persistente salva com {session_data['cookies_count']} cookies![/]")
+                if user_info:
+                    console.print(f"[cyan]👤 Usuário: {user_info}[/]")
+            else:
+                console.print(f"[yellow]⚠ Login no {info['name']} não detectado ou janela fechada antes de concluir.[/]")
+
+            try:
+                browser.close()
+            except Exception:
+                pass
+
             self._playwright.stop()
             self._playwright = None
             return logged_in
@@ -279,8 +300,9 @@ class SessionManager:
     def _extract_user_info(self, page: Page, platform: str) -> str:
         """Tenta extrair o nome/email do usuário logado."""
         try:
+            if page.is_closed():
+                return ""
             if platform == "linkedin":
-                # Tenta pegar o nome do perfil
                 el = page.query_selector(".feed-identity-module__actor-meta a, .global-nav__me-photo")
                 if el:
                     return el.get_attribute("alt") or el.inner_text().strip()
@@ -288,7 +310,6 @@ class SessionManager:
                 el = page.query_selector("[data-testid='user-name'], .user-name")
                 if el:
                     return el.inner_text().strip()
-            # Fallback genérico: tenta pegar qualquer nome/email visível na nav
             for sel in [".user-name", ".user-email", "[data-testid*='user']", ".account-name"]:
                 el = page.query_selector(sel)
                 if el:
@@ -320,9 +341,6 @@ class SessionManager:
         except Exception:
             return None
 
-        state_dir = self._state_dir(platform)
-        state_dir.mkdir(parents=True, exist_ok=True)
-
         pw = sync_playwright().start()
 
         browser_args = [
@@ -332,34 +350,23 @@ class SessionManager:
         ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
         try:
-            # Tenta contexto persistente primeiro (mantém extensões, perfil)
-            context = pw.chromium.launch_persistent_context(
-                user_data_dir=str(state_dir),
-                headless=headless,
-                viewport={"width": 1280, "height": 850},
-                user_agent=ua,
-                locale="pt-BR",
-                args=browser_args,
-            )
-        except Exception:
-            # Fallback: contexto não-persistente com storage state injetado
             browser = pw.chromium.launch(headless=headless, args=browser_args)
-
-            # Salva storage_state em arquivo temporário para o Playwright
-            temp_state_file = SESSIONS_DIR / f"_temp_{platform}_state.json"
-            temp_state_file.write_text(json.dumps(storage_state), encoding="utf-8")
-            
             context = browser.new_context(
                 viewport={"width": 1280, "height": 850},
                 user_agent=ua,
                 locale="pt-BR",
-                storage_state=str(temp_state_file),
+                storage_state=storage_state,
             )
-
-        page = context.pages[0] if context.pages else context.new_page()
-        page.set_default_timeout(30000)
-
-        return (pw, context, page)
+            page = context.new_page()
+            page.set_default_timeout(30000)
+            return (pw, context, page)
+        except Exception as e:
+            console.print(f"[red]Erro ao criar contexto autenticado: {e}[/]")
+            try:
+                pw.stop()
+            except Exception:
+                pass
+            return None
 
     # ─────────────────────────────────────────────────────────
     #  Verificar se sessão ainda é válida
