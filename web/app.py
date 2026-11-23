@@ -239,15 +239,53 @@ def api_update_status(job_id: int, req: UpdateStatusRequest):
     return {"success": True, "job_id": job_id, "new_status": req.status}
 
 
+@app.get("/api/resume/original")
+def api_download_original_resume():
+    """Retorna o PDF original do currículo do candidato (CV_Cesar_Lana.pdf)."""
+    profile = load_candidate_profile()
+    resume_path = profile.documents.resume_pdf_path
+    p = Path(resume_path)
+    if not p.is_absolute():
+        p = BASE_DIR / p
+
+    if not p.exists():
+        candidates = list((BASE_DIR / "config").glob("*.pdf")) + list((BASE_DIR / "data").glob("curriculo*.pdf"))
+        if candidates:
+            p = candidates[0]
+        else:
+            raise HTTPException(status_code=404, detail="Currículo original em PDF não encontrado.")
+
+    return FileResponse(
+        path=str(p),
+        filename=p.name,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={p.name}"}
+    )
+
+
 @app.get("/api/jobs/{job_id}/resume")
 def api_download_resume(job_id: int):
-    """Gera e retorna o PDF do currículo ATS sob medida para download."""
+    """Retorna o currículo original do candidato para a candidatura."""
+    profile = load_candidate_profile()
+    resume_path = profile.documents.resume_pdf_path
+    p = Path(resume_path)
+    if not p.is_absolute():
+        p = BASE_DIR / p
+
+    if p.exists():
+        return FileResponse(
+            path=str(p),
+            filename=p.name,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"inline; filename={p.name}"}
+        )
+
+    # Fallback caso não haja arquivo original
     jobs = list_jobs()
     job = next((j for j in jobs if j.id == job_id), None)
     if not job:
         raise HTTPException(status_code=404, detail="Vaga não encontrada.")
 
-    profile = load_candidate_profile()
     tailor = ResumeTailor(profile)
     pdf_path = tailor.generate_tailored_pdf(job)
 

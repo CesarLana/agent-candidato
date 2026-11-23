@@ -352,37 +352,41 @@ class JobApplicant:
                 continue
 
     def _handle_file_upload(self, page, job: Job):
-        """Encontra campos de input file para o currículo e faz o upload (customizado se ativado)."""
+        """Encontra campos de input file para o currículo e faz o upload do currículo original."""
         pdf_to_upload: Optional[Path] = None
 
-        # Tenta gerar currículo sob medida se a engine estiver ativa
-        if self.tailor:
+        # Prioridade Máxima: Currículo original do candidato (config/CV_Cesar_Lana.pdf)
+        resume_path = self.profile.documents.resume_pdf_path
+        if resume_path:
+            p = Path(resume_path)
+            if not p.is_absolute():
+                p = BASE_DIR / p
+            if p.exists():
+                pdf_to_upload = p
+
+        # Fallback 1: Buscar arquivo em config/ ou data/
+        if not pdf_to_upload:
+            candidates = list((BASE_DIR / "config").glob("*.pdf")) + list((BASE_DIR / "data").glob("curriculo*.pdf"))
+            if candidates:
+                pdf_to_upload = candidates[0]
+
+        # Fallback 2: Gerar sob medida caso não haja PDF original
+        if not pdf_to_upload and self.tailor:
             try:
                 console.print("[dim]Gerando currículo ATS sob medida para esta vaga...[/dim]")
                 pdf_to_upload = self.tailor.generate_tailored_pdf(job)
             except Exception as e:
-                console.print(f"[yellow]Aviso: Falha ao gerar currículo customizado ({e}). Usando currículo padrão.[/yellow]")
+                console.print(f"[yellow]Aviso: Falha ao gerar currículo customizado ({e}).[/yellow]")
 
         if not pdf_to_upload or not pdf_to_upload.exists():
-            resume_path = self.profile.documents.resume_pdf_path
-            p = Path(resume_path)
-            if not p.is_absolute():
-                p = BASE_DIR / p
-
-            if not p.exists():
-                candidates = list((BASE_DIR / "data").glob("*.pdf")) + list((BASE_DIR / "data").glob("*.txt"))
-                if candidates:
-                    pdf_to_upload = candidates[0]
-                else:
-                    return
-            else:
-                pdf_to_upload = p
+            console.print("[yellow]⚠ Nenhum currículo PDF encontrado para upload.[/]")
+            return
 
         file_inputs = page.query_selector_all("input[type='file']")
         for f_input in file_inputs:
             try:
-                f_input.set_input_files(str(pdf_to_upload))
-                console.print(f"[green]✓ Currículo anexado:[/] [bold]{pdf_to_upload.name}[/bold]")
+                f_input.set_input_files(str(pdf_to_upload.resolve()))
+                console.print(f"[green]✓ Currículo original anexado:[/] [bold]{pdf_to_upload.name}[/bold]")
                 break
             except Exception:
                 continue
