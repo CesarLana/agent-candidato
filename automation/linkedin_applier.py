@@ -16,6 +16,7 @@ from rich.console import Console
 
 from automation.session_manager import SessionManager
 from automation.form_mapper import FormMapper
+from automation.safety_guard import SafetyGuard
 from core.database import save_job, update_job_status
 from core.llm import LLMEngine
 from core.models import CandidateProfile, Job
@@ -32,6 +33,7 @@ class LinkedInApplier:
         self.profile = profile
         self.headless = headless
         self.session_mgr = SessionManager(headless=headless)
+        self.safety_guard = SafetyGuard()
         self.llm = LLMEngine()
         self.mapper = FormMapper(profile, self.llm)
 
@@ -43,16 +45,29 @@ class LinkedInApplier:
         """Abre o navegador para o usuário fazer login no LinkedIn."""
         return self.session_mgr.interactive_login("linkedin")
 
-    def apply(self, job: Job, auto_submit: bool = False) -> bool:
+    def apply(self, job: Job, auto_submit: bool = False, ignore_safety_hours: bool = False) -> bool:
         """Aplica para uma vaga do LinkedIn via Easy Apply.
         
         Args:
             job: Objeto Job com a URL da vaga
             auto_submit: Se True, submete sem confirmação
+            ignore_safety_hours: Ignora restrição de horário comercial
             
         Returns:
             True se candidatura enviada com sucesso
         """
+        # 🛡️ Verificação de Segurança Anti-Ban do LinkedIn
+        can_apply, reason = self.safety_guard.can_apply_now("linkedin", ignore_hours=ignore_safety_hours)
+        if not can_apply:
+            console.print(f"\n[bold yellow]🛡️ Alerta de Segurança LinkedIn:[/] {reason}")
+            import sys
+            is_interactive = sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty()
+            if is_interactive:
+                override = console.input("[yellow]Deseja ignorar o alerta de segurança? (s/n): [/]").strip().lower()
+                if override not in ["s", "sim", "y"]:
+                    return False
+            else:
+                return False
         if not self.is_logged_in():
             console.print("[yellow]⚠ Você não está logado no LinkedIn.[/]")
             console.print("[cyan]Execute: python main.py login linkedin[/]")
@@ -97,6 +112,7 @@ class LinkedInApplier:
                     submitted = self._click_submit(page)
                     if submitted:
                         console.print("[bold green]🚀 Candidatura LinkedIn Easy Apply enviada com sucesso![/]")
+                        self.safety_guard.record_application("linkedin", job.id)
                         update_job_status(job.id, "applied",
                                           applied_at=datetime.now().isoformat(),
                                           notes="Enviada via LinkedIn Easy Apply.",
@@ -114,6 +130,7 @@ class LinkedInApplier:
                             submitted = self._click_submit(page)
                             if submitted:
                                 console.print("[bold green]🚀 Candidatura enviada![/]")
+                                self.safety_guard.record_application("linkedin", job.id)
                                 update_job_status(job.id, "applied",
                                                   applied_at=datetime.now().isoformat(),
                                                   notes="Enviada via LinkedIn Easy Apply.",

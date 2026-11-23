@@ -13,8 +13,10 @@ from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
 from automation.applicant import JobApplicant
+from automation.safety_guard import SafetyGuard
 from automation.session_manager import SessionManager, PLATFORMS
 from automation.linkedin_applier import LinkedInApplier
+from core.ats_scanner import ATSCompatibilityScanner
 from core.config import load_candidate_profile, save_candidate_profile
 from core.database import export_to_csv, get_job_by_url, get_stats, list_jobs, save_job, update_job_status
 from core.interview_coach import InterviewCoach
@@ -22,6 +24,7 @@ from core.llm import LLMEngine
 from core.models import CandidateProfile, Job
 from core.networking import NetworkingCoach
 from core.resume_tailor import ResumeTailor
+from core.salary_advisor import SalaryAdvisor
 from core.skill_roadmap import SkillGapRoadmap
 from scheduler.hunter import JobHunterDaemon
 from scrapers import fetch_job_details
@@ -211,6 +214,40 @@ def api_get_skill_roadmap(job_id: int):
         "title": job.title,
         "roadmap_markdown": roadmap_md,
     }
+
+
+@app.get("/api/jobs/{job_id}/ats-check")
+def api_get_ats_check(job_id: int):
+    """Audita a compatibilidade ATS do currículo para esta vaga."""
+    jobs = list_jobs()
+    job = next((j for j in jobs if j.id == job_id), None)
+    if not job:
+        raise HTTPException(status_code=404, detail="Vaga não encontrada.")
+
+    profile = load_candidate_profile()
+    scanner = ATSCompatibilityScanner(profile)
+    audit = scanner.scan(job)
+    return audit
+
+
+@app.get("/api/jobs/{job_id}/salary-advisor")
+def api_get_salary_advisor(job_id: int):
+    """Gera estimativa e pitch de negociação salarial para a vaga."""
+    jobs = list_jobs()
+    job = next((j for j in jobs if j.id == job_id), None)
+    if not job:
+        raise HTTPException(status_code=404, detail="Vaga não encontrada.")
+
+    profile = load_candidate_profile()
+    advisor = SalaryAdvisor(profile)
+    return advisor.advise(job)
+
+
+@app.get("/api/safety-status")
+def api_get_safety_status():
+    """Retorna o status do guarda de segurança anti-ban e limites diários."""
+    guard = SafetyGuard()
+    return guard.get_status_report()
 
 
 @app.post("/api/jobs/{job_id}/apply")

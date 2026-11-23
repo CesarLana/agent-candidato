@@ -10,6 +10,7 @@ from rich.console import Console
 
 from automation.browser_manager import BrowserManager
 from automation.form_mapper import FormMapper
+from automation.safety_guard import SafetyGuard
 from automation.visual_agent import VisualFormAgent
 from core.database import save_job, update_job_status
 from core.llm import LLMEngine
@@ -37,6 +38,7 @@ class JobApplicant:
         self.tailor = ResumeTailor(profile, self.llm) if tailor_resume else None
         self.notifier = TelegramNotifier()
         self.visual_agent = VisualFormAgent(self.llm)
+        self.safety_guard = SafetyGuard()
         self.typing_delay = int(os.getenv("TYPING_DELAY_MS", "20"))
 
     def apply_to_job(self, job_or_url, auto_submit: bool = True, headless: Optional[bool] = None) -> bool:
@@ -54,10 +56,25 @@ class JobApplicant:
 
         return self.run_application(job, auto_submit=auto_submit)
 
-    def run_application(self, job: Job, auto_submit: bool = False) -> bool:
+    def run_application(self, job: Job, auto_submit: bool = False, ignore_safety_hours: bool = False) -> bool:
         """Executa a navegação, preenchimento e fluxo de candidatura."""
         if job.id is None:
             job = save_job(job)
+
+        # 🛡️ Verificação do Guarda de Segurança Anti-Ban
+        can_apply, reason = self.safety_guard.can_apply_now(
+            platform=job.platform or "generic", ignore_hours=ignore_safety_hours
+        )
+        if not can_apply:
+            console.print(f"\n[bold yellow]🛡️ Alerta do Guarda de Segurança Anti-Ban:[/] {reason}")
+            is_interactive = sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty()
+            if is_interactive:
+                override = console.input("[yellow]Deseja ignorar o aviso e prosseguir mesmo assim? (s/n): [/]").strip().lower()
+                if override not in ["s", "sim", "y"]:
+                    console.print("[dim]Candidatura cancelada por precaução de segurança.[/dim]")
+                    return False
+            else:
+                return False
 
         console.print(f"[bold cyan]Iniciando navegador para a vaga:[/] [bold]{job.title}[/] @ [bold]{job.company}[/]")
         page = self.browser_manager.start()

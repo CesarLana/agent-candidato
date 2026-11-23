@@ -23,8 +23,10 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
 from automation.applicant import JobApplicant
+from automation.safety_guard import SafetyGuard
 from automation.session_manager import SessionManager, PLATFORMS
 from automation.linkedin_applier import LinkedInApplier
+from core.ats_scanner import ATSCompatibilityScanner
 from core.config import get_profile_path, load_candidate_profile
 from core.database import export_to_csv, get_stats, list_jobs, save_cover_letter, save_job
 from core.interview_coach import InterviewCoach
@@ -32,6 +34,7 @@ from core.llm import LLMEngine
 from core.models import Job
 from core.networking import NetworkingCoach
 from core.resume_tailor import ResumeTailor
+from core.salary_advisor import SalaryAdvisor
 from core.skill_roadmap import SkillGapRoadmap
 from email_tracker.tracker import EmailFeedbackTracker
 from notifications.telegram_bot import TelegramNotifier
@@ -737,6 +740,129 @@ def smart_apply_cmd(
             console.print(f"[dim]Dica: python main.py login {platform}[/]")
         applicant = JobApplicant(profile=profile, headless=headless, tailor_resume=tailor)
         applicant.run_application(job, auto_submit=auto_submit)
+
+
+@app.command(name="ats-check")
+def ats_check_cmd(
+    target: str = typer.Argument(..., help="ID da vaga no banco (ex: 1) ou URL da vaga"),
+    cv_path: Optional[str] = typer.Option(None, "--cv", help="Caminho alternativo para o PDF do currículo"),
+):
+    """Audita a compatibilidade do seu currículo contra os robôs ATS (Applicant Tracking Systems)."""
+    profile = load_candidate_profile()
+    llm = LLMEngine()
+    scanner = ATSCompatibilityScanner(profile, llm)
+
+    job: Optional[Job] = None
+    if target.isdigit():
+        jobs = list_jobs()
+        job = next((j for j in jobs if j.id == int(target)), None)
+    else:
+        with console.status("[bold green]Coletando dados da vaga..."):
+            job = fetch_job_details(target)
+
+    if not job:
+        console.print("[bold red]Vaga não encontrada no banco nem na URL informada.[/]")
+        return
+
+    console.print(Panel.fit(f"[bold cyan]🔍 Auditoria ATS:[/] {job.title} @ {job.company}", border_style="cyan"))
+
+    with console.status("[bold green]Escaneando densidade de palavras-chave, formatação e métricas..."):
+        audit = scanner.scan(job, custom_resume_path=cv_path)
+
+    score = audit["overall_score"]
+    color = "green" if score >= 80 else ("yellow" if score >= 60 else "red")
+
+    summary_text = f"""
+[bold]Score Geral de Aprovação ATS:[/] [{color} bold]{score}%[/{color} bold]
+
+[bold cyan]1. Hard Skills Pedidas:[/] {', '.join(audit['skills_analysis']['demanded_skills']) or 'N/A'}
+[bold green]✓ Skills Encontradas no CV:[/] {', '.join(audit['skills_analysis']['matched_skills']) or 'Nenhuma'}
+[bold red]✗ Palavras-chave Faltantes:[/] {', '.join(audit['skills_analysis']['missing_skills']) or 'Nenhuma lacuna crítica'}
+
+[bold cyan]2. Formatação & Parseabilidade:[/] {audit['formatting_analysis']['score']}/100 pts ({audit['formatting_analysis']['word_count']} palavras legíveis)
+[bold cyan]3. Métricas Quantificadas:[/] {audit['impact_analysis']['quantified_metrics_found']} indicadores numéricos encontrados no texto
+"""
+    console.print(Panel(summary_text, title="📊 Diagnóstico do Filtro ATS", border_style=color))
+
+    rec_table = Table(title="💡 Recomendações Acionáveis para Aumentar o Score", show_header=True, header_style="bold yellow")
+    rec_table.add_column("#", justify="center", width=4)
+    rec_table.add_column("Recomendação", min_width=50)
+
+    for i, tip in enumerate(audit["recommendations"], 1):
+        rec_table.add_row(str(i), tip)
+
+    console.print(rec_table)
+
+
+@app.command(name="salary-advisor")
+def salary_advisor_cmd(
+    target: str = typer.Argument(..., help="ID da vaga no banco (ex: 1) ou URL da vaga"),
+):
+    """Gera estimativa de faixa salarial justa e script de negociação com RH."""
+    profile = load_candidate_profile()
+    advisor = SalaryAdvisor(profile)
+
+    job: Optional[Job] = None
+    if target.isdigit():
+        jobs = list_jobs()
+        job = next((j for j in jobs if j.id == int(target)), None)
+    else:
+        with console.status("[bold green]Coletando dados da vaga..."):
+            job = fetch_job_details(target)
+
+    if not job:
+        console.print("[bold red]Vaga não encontrada.[/]")
+        return
+
+    console.print(Panel.fit(f"[bold green]💰 Consultor Salarial:[/] {job.title} @ {job.company}", border_style="green"))
+    advice = advisor.advise(job)
+
+    salary_text = f"""
+[bold]Categoria Mapeada:[/] {advice['role_category']}
+[bold green]Faixa Salarial Sugerida (CLT):[/] [bold]{advice['recommended_clt_range']}[/] (Alvo: {advice['recommended_clt_target']})
+[bold cyan]Equivalente Estimado (PJ):[/] [bold]{advice['recommended_pj_target']}[/]
+
+[bold yellow]Resposta Pronta para Formulários Online:[/]
+[dim]"{advice['form_answer']}"[/dim]
+
+[bold yellow]Script de Resposta para a Triagem Telefônica com RH:[/]
+"{advice['interview_pitch']}"
+"""
+    console.print(Panel(salary_text, title="💵 Estimativa de Mercado & Ancoragem", border_style="green"))
+
+    prop_table = Table(title="🎯 Argumentos de Valor para Justificar sua Pretensão", show_header=True, header_style="bold cyan")
+    prop_table.add_column("Pontos Fortes Baseados no seu Histórico Real", min_width=50)
+    for p in advice["value_propositions"]:
+        prop_table.add_row(f"• {p}")
+    console.print(prop_table)
+
+
+@app.command(name="safety")
+def safety_cmd():
+    """Exibe o status do Guarda de Segurança Anti-Ban e limites diários de candidatura."""
+    guard = SafetyGuard()
+    status = guard.get_status_report()
+
+    console.print(Panel.fit("[bold cyan]🛡️ Status do Guarda de Segurança Anti-Ban[/]", border_style="cyan"))
+
+    hours_status = "[green]✓ Horário comercial ativo (comportamento humano seguro)[/]" if status["is_work_hours"] else "[yellow]! Fora de horário comercial (08h às 20h) - use com cautela[/]"
+
+    info_text = f"""
+[bold]Data:[/] {status['date']}
+[bold]Candidaturas Hoje:[/] [bold green]{status['total_today']}[/] de [bold]{status['limit_total']}[/] permitidas
+[bold]Margem Restante:[/] [bold cyan]{status['remaining_total']}[/] candidaturas seguras hoje
+[bold]Limite por Plataforma:[/] {status['limit_per_platform']} por dia (ex: max {status['limit_per_platform']} no LinkedIn)
+[bold]Janela de Atividade:[/] {hours_status}
+"""
+    console.print(Panel(info_text, title="Métricas de Proteção", border_style="green"))
+
+    if status["by_platform"]:
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Plataforma", min_width=15)
+        table.add_column("Envios Hoje", justify="center", width=12)
+        for plat, count in status["by_platform"].items():
+            table.add_row(plat.title(), str(count))
+        console.print(table)
 
 
 if __name__ == "__main__":
