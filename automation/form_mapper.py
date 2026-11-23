@@ -1,8 +1,21 @@
 """Mapeador semântico de campos de formulário para dados do perfil."""
 
+import re
 from typing import Dict, List, Optional
 from core.models import CandidateProfile, Job
 from core.llm import LLMEngine
+
+
+def _matches_any(patterns: List[str], text: str) -> bool:
+    """Verifica se algum padrão corresponde ao texto, usando limites de palavra para termos curtos (<=3 letras)."""
+    for pat in patterns:
+        if len(pat) <= 3:
+            if re.search(r"\b" + re.escape(pat) + r"\b", text):
+                return True
+        else:
+            if pat in text:
+                return True
+    return False
 
 
 class FormMapper:
@@ -28,12 +41,24 @@ class FormMapper:
         if any(w in text for w in ["phone", "telefone", "celular", "mobile", "whatsapp"]):
             return "phone"
 
-        # Nome
-        if any(w in text for w in ["first name", "primeiro nome", "first_name"]):
-            return "first_name"
-        if any(w in text for w in ["last name", "sobrenome", "last_name"]):
+        # Previne que campos de empresa, escola ou usuário sejam confundidos com o nome do candidato
+        if any(w in text for w in ["company", "empresa", "employer", "organization", "organização", "instituição", "school", "escola", "faculdade", "university"]):
+            return "open_question"
+
+        if any(w in text for w in ["username", "login", "usuario", "usuário"]):
+            return "open_question"
+
+        # Nome do candidato
+        if any(w in text for w in ["first name", "primeiro nome", "first_name", "given name", "nome"]):
+            if "last" not in text and "sobrenome" not in text and "full" not in text and "completo" not in text:
+                return "first_name"
+        if any(w in text for w in ["last name", "sobrenome", "last_name", "family name"]):
             return "last_name"
-        if any(w in text for w in ["full name", "nome completo", "seu nome", "candidate name", "name"]):
+        if any(w in text for w in ["full name", "nome completo", "seu nome", "candidate name", "candidate_name"]):
+            return "full_name"
+        raw_name = field_info.get("name", "").lower().strip()
+        raw_id = field_info.get("id", "").lower().strip()
+        if raw_name in ["name", "nome"] or raw_id in ["name", "nome"]:
             return "full_name"
 
         # Redes e Portfólio
@@ -41,43 +66,43 @@ class FormMapper:
             return "linkedin"
         if "github" in text:
             return "github"
-        if any(w in text for w in ["portfolio", "website", "site", "url"]):
+        if any(w in text for w in ["portfolio", "portfólio", "website", "personal site", "personal website"]) or (raw_name in ["site", "website", "url"]):
             return "portfolio"
 
         # Endereço / Cidade
-        if any(w in text for w in ["city", "cidade"]):
+        if _matches_any(["city", "cidade"], text):
             return "city"
-        if any(w in text for w in ["state", "estado", "uf"]):
+        if _matches_any(["state", "estado", "uf"], text):
             return "state"
-        if any(w in text for w in ["cep", "postal", "zip"]):
+        if _matches_any(["cep", "postal", "zip"], text):
             return "postal_code"
 
         # Currículo / Resume (upload)
-        if any(w in text for w in ["resume", "cv", "curriculo", "currículo"]):
+        if _matches_any(["resume", "cv", "curriculo", "currículo"], text):
             return "resume"
 
         # Salário / Pretensão
-        if any(w in text for w in ["salary", "remuneração", "pretens", "salario"]):
+        if _matches_any(["salary", "remuneração", "pretens", "salario"], text):
             return "salary"
 
         # Carta de Apresentação / Cover Letter
-        if any(w in text for w in ["cover letter", "carta de apresentação", "apresentação", "mensagem ao recrutador", "carta de motiv"]):
+        if _matches_any(["cover letter", "carta de apresentação", "apresentação", "mensagem ao recrutador", "carta de motiv"], text):
             return "cover_letter"
 
         # Demografia e Inclusão (muito comuns em ATS como Greenhouse e Gupy)
-        if any(w in text for w in ["gênero", "genero", "gender"]):
+        if _matches_any(["gênero", "genero", "gender"], text):
             return "gender"
-        if any(w in text for w in ["raça", "cor", "etnia", "race", "ethnicity"]):
+        if _matches_any(["raça", "cor", "etnia", "race", "ethnicity"], text):
             return "race_ethnicity"
-        if any(w in text for w in ["deficiência", "deficiencia", "pcd", "disability"]):
+        if _matches_any(["deficiência", "deficiencia", "pcd", "disability"], text):
             return "disability"
 
         # Autorização de trabalho / Visto
-        if any(w in text for w in ["autorização", "trabalhar no país", "work authorization", "legally authorized", "sponsorship"]):
+        if _matches_any(["autorização", "trabalhar no país", "work authorization", "legally authorized", "sponsorship"], text):
             return "work_authorization"
 
         # País / Nacionalidade
-        if any(w in text for w in ["país", "pais", "country"]):
+        if _matches_any(["país", "pais", "country"], text):
             return "country"
 
         # Pergunta aberta / dissertativa
@@ -88,10 +113,14 @@ class FormMapper:
         p = self.profile.personal_info
         links = self.profile.links
 
+        name_parts = (p.full_name or "").split()
+        first_from_full = name_parts[0] if name_parts else ""
+        last_from_full = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+
         if field_type == "first_name":
-            return p.first_name or p.full_name.split()[0]
+            return p.first_name or first_from_full
         elif field_type == "last_name":
-            return p.last_name or (" ".join(p.full_name.split()[1:]) if len(p.full_name.split()) > 1 else "")
+            return p.last_name or last_from_full
         elif field_type == "full_name":
             return p.full_name or f"{p.first_name} {p.last_name}".strip()
         elif field_type == "email":

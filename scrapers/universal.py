@@ -1,7 +1,7 @@
 """Scraper universal para páginas genéricas de anúncio de vagas."""
 
 from typing import Optional
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 import requests
 from bs4 import BeautifulSoup
 
@@ -16,7 +16,7 @@ class UniversalScraper(BaseScraper):
     def extract_job(self, url: str) -> Optional[Job]:
         try:
             if url.startswith("file:///"):
-                file_path = url.replace("file:///", "")
+                file_path = unquote(url.replace("file:///", ""))
                 with open(file_path, "r", encoding="utf-8") as f:
                     html_content = f.read()
             else:

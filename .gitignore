@@ -29,6 +29,8 @@ data/curriculo_*.pdf
 data/curriculo.pdf
 data/preparacao_entrevista_*.md
 data/roadmap_estudos_*.md
+data/*.png
+*.png
 
 # Logs
 *.log

@@ -7,6 +7,7 @@ from scrapers.greenhouse import GreenhouseScraper
 from scrapers.lever import LeverScraper
 from scrapers.gupy import GupyScraper
 from scrapers.workable import WorkableScraper
+from scrapers.linkedin import LinkedInScraper
 from scrapers.universal import UniversalScraper
 from scrapers.linkedin_search import search_linkedin_jobs
 from scrapers.remote_boards import search_remoteok_jobs, search_weworkremotely_jobs
@@ -16,6 +17,7 @@ SCRAPERS: List[BaseScraper] = [
     LeverScraper(),
     GupyScraper(),
     WorkableScraper(),
+    LinkedInScraper(),
     UniversalScraper(), # Sempre por último como fallback
 ]
 

@@ -7,6 +7,7 @@ classifica as mensagens usando IA (Entrevista, Rejeição, Confirmação) e atua
 import email
 from email.header import decode_header
 import imaplib
+import json
 import os
 import re
 from datetime import datetime, timedelta

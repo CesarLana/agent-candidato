@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agente Candidato - Centro de Comando de Carreiras</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { background-color: #0b0f19; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -760,7 +761,8 @@
       try {
         const res = await fetch(`/api/jobs/${jobId}/interview-prep`);
         const data = await res.json();
-        document.getElementById('modalPrepContent').innerText = data.guide_markdown;
+        const md = data.guide_markdown || '';
+        document.getElementById('modalPrepContent').innerHTML = typeof marked !== 'undefined' ? marked.parse(md) : `<pre class="whitespace-pre-wrap">${md}</pre>`;
       } catch (e) {
         document.getElementById('modalPrepContent').innerText = 'Erro ao gerar o guia de entrevista.';
       }
@@ -827,7 +829,8 @@
       try {
         const res = await fetch(`/api/jobs/${jobId}/roadmap`);
         const data = await res.json();
-        document.getElementById('modalRoadmapContent').innerText = data.roadmap_markdown;
+        const md = data.roadmap_markdown || '';
+        document.getElementById('modalRoadmapContent').innerHTML = typeof marked !== 'undefined' ? marked.parse(md) : `<pre class="whitespace-pre-wrap">${md}</pre>`;
       } catch (e) {
         document.getElementById('modalRoadmapContent').innerText = 'Erro ao gerar o roadmap de estudo.';
       }
@@ -903,12 +906,32 @@
     function copyToClipboard(elementId) {
       const el = document.getElementById(elementId);
       if (!el) return;
-      const text = el.innerText;
-      navigator.clipboard.writeText(text).then(() => {
+      const text = el.innerText || el.textContent;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+          alert('Copiado para a área de transferência!');
+        }).catch(() => fallbackCopy(text));
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
         alert('Copiado para a área de transferência!');
-      }).catch(err => {
-        console.error(err);
-      });
+      } catch (err) {
+        alert('Selecione e copie o texto manualmente.');
+      }
+      document.body.removeChild(textArea);
     }
 
     // Inicialização

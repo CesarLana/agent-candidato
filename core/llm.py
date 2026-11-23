@@ -105,7 +105,14 @@ Responda ESTRITAMENTE em formato JSON com o seguinte schema:
                 match = re.search(r"\{.*\}", response_text, re.DOTALL)
                 if match:
                     parsed = json.loads(match.group(0))
-                    score = int(parsed.get("score", 70))
+                    raw_score = parsed.get("score", 70)
+                    if isinstance(raw_score, (int, float)):
+                        score = int(raw_score)
+                    elif isinstance(raw_score, str):
+                        m = re.search(r"\d+", raw_score)
+                        score = int(m.group(0)) if m else 70
+                    else:
+                        score = 70
                     summary = parsed.get("summary", "Compatibilidade calculada por IA.")
                     matched = list(parsed.get("skills_matched", []))
                     missing = list(parsed.get("skills_missing", []))

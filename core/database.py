@@ -13,8 +13,10 @@ DB_PATH = BASE_DIR / "data" / "applications.db"
 
 def get_connection() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH))
+    conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA busy_timeout = 30000;")
+    conn.execute("PRAGMA journal_mode = WAL;")
     return conn
 
 
@@ -256,7 +258,16 @@ def get_stats() -> Dict[str, int]:
         cursor = conn.cursor()
         cursor.execute("SELECT status, COUNT(*) as count FROM jobs GROUP BY status")
         rows = cursor.fetchall()
-        stats = {"total": 0, "pending": 0, "applied": 0, "skipped": 0, "failed": 0}
+        stats = {
+            "total": 0,
+            "pending": 0,
+            "applied": 0,
+            "interview": 0,
+            "offer": 0,
+            "rejected": 0,
+            "skipped": 0,
+            "failed": 0,
+        }
         for r in rows:
             st = r["status"]
             cnt = r["count"]

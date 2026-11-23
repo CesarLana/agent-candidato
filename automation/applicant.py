@@ -39,6 +39,21 @@ class JobApplicant:
         self.visual_agent = VisualFormAgent(self.llm)
         self.typing_delay = int(os.getenv("TYPING_DELAY_MS", "20"))
 
+    def apply_to_job(self, job_or_url, auto_submit: bool = True, headless: Optional[bool] = None) -> bool:
+        """Método de conveniência para aplicar para uma vaga (recebendo objeto Job ou URL string)."""
+        if headless is not None:
+            self.browser_manager.headless = headless
+
+        if isinstance(job_or_url, str):
+            from scrapers import fetch_job_details
+            job = fetch_job_details(job_or_url)
+            if not job:
+                job = Job(title="Candidatura", company="Empresa", url=job_or_url)
+        else:
+            job = job_or_url
+
+        return self.run_application(job, auto_submit=auto_submit)
+
     def run_application(self, job: Job, auto_submit: bool = False) -> bool:
         """Executa a navegação, preenchimento e fluxo de candidatura."""
         if job.id is None:
@@ -117,6 +132,19 @@ class JobApplicant:
                         return False
 
                 # Fallback para validação no terminal local
+                is_interactive = sys.stdin and hasattr(sys.stdin, "isatty") and sys.stdin.isatty()
+                if not is_interactive:
+                    if auto_submit:
+                        self._click_submit_button(page)
+                        update_job_status(job.id, "applied", applied_at=datetime.now().isoformat(), notes="Enviada em segundo plano.", url=job.url)
+                        self.browser_manager.take_screenshot(f"applied_job_{job.id}.png")
+                        console.print("[bold green]🚀 Candidatura submetida em segundo plano![/]")
+                        return True
+                    else:
+                        update_job_status(job.id, "reviewed", notes="Preenchido em segundo plano aguardando envio.", url=job.url)
+                        console.print("[yellow]Modo não-interativo: Formulário preenchido e marcado como revisado.[/]")
+                        return True
+
                 console.print(
                     "\n[bold yellow]⚠️ MODO HUMAN-IN-THE-LOOP ATIVO:[/]"
                     "\nO navegador está aberto na sua tela. Revise os campos preenchidos."

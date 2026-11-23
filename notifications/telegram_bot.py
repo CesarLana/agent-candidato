@@ -1,5 +1,6 @@
 """Módulo de integração com o Telegram para notificações e aprovação remota."""
 
+import html
 import json
 import os
 import time
@@ -76,18 +77,24 @@ class TelegramNotifier:
         blocks = int(round(score / 10))
         bar = "🟩" * blocks + "⬜" * (10 - blocks)
 
-        matched_skills = ", ".join(job.skills_matched) if job.skills_matched else "Competências gerais"
-        missing_skills = ", ".join(job.skills_missing) if job.skills_missing else "Nenhum gap crítico"
+        esc_title = html.escape(job.title or "Vaga")
+        esc_company = html.escape(job.company or "Empresa")
+        esc_location = html.escape(job.location or "Não especificado")
+        esc_workplace = html.escape(job.workplace_type or "Remoto")
+        esc_summary = html.escape(job.fit_summary or "Sem resumo disponível.")
+
+        matched_skills = html.escape(", ".join(job.skills_matched) if job.skills_matched else "Competências gerais")
+        missing_skills = html.escape(", ".join(job.skills_missing) if job.skills_missing else "Nenhum gap crítico")
 
         msg = (
             f"🎯 <b>NOVA VAGA ENCONTRADA!</b>\n\n"
-            f"💼 <b>Cargo:</b> {job.title}\n"
-            f"🏢 <b>Empresa:</b> {job.company}\n"
-            f"📍 <b>Local / Modalidade:</b> {job.location} ({job.workplace_type})\n"
+            f"💼 <b>Cargo:</b> {esc_title}\n"
+            f"🏢 <b>Empresa:</b> {esc_company}\n"
+            f"📍 <b>Local / Modalidade:</b> {esc_location} ({esc_workplace})\n"
             f"📊 <b>Fit Score:</b> {score}% {bar}\n\n"
             f"✅ <b>Skills Alinhadas:</b> {matched_skills}\n"
             f"⚠️ <b>Gaps / Desenvolver:</b> {missing_skills}\n\n"
-            f"💡 <b>Diagnóstico:</b>\n<i>{job.fit_summary or 'Sem resumo disponível.'}</i>\n\n"
+            f"💡 <b>Diagnóstico:</b>\n<i>{esc_summary}</i>\n\n"
             f"🔗 <a href='{job.url}'>Ver anúncio original</a>"
         )
         self.send_message(msg)
@@ -102,9 +109,12 @@ class TelegramNotifier:
         if not self.is_configured:
             return False
 
+        esc_title = html.escape(job.title or "Vaga")
+        esc_company = html.escape(job.company or "Empresa")
+
         # Envia a screenshot do formulário
         if screenshot_path and screenshot_path.exists():
-            self.send_photo(screenshot_path, caption=f"📸 Formulário preenchido para <b>{job.title}</b> na <b>{job.company}</b>")
+            self.send_photo(screenshot_path, caption=f"📸 Formulário preenchido para <b>{esc_title}</b> na <b>{esc_company}</b>")
 
         # Cria botões inline para o usuário clicar
         callback_approve = f"appr_{job.id or 1}"
@@ -125,7 +135,7 @@ class TelegramNotifier:
             "text": (
                 f"⚠️ <b>Confirmação de Envio ({timeout_seconds}s para responder):</b>\n\n"
                 f"Revise os dados e o print acima.\n"
-                f"Deseja submeter a candidatura para <b>{job.title}</b> @ <b>{job.company}</b>?"
+                f"Deseja submeter a candidatura para <b>{esc_title}</b> @ <b>{esc_company}</b>?"
             ),
             "parse_mode": "HTML",
             "reply_markup": keyboard,

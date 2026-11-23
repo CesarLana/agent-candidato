@@ -42,7 +42,14 @@ class ResumeTailor:
         ordered_skills = self._order_skills(job)
 
         # 3. Compilação do PDF via ReportLab
-        self._build_pdf(job, tailored_summary, ordered_skills, output_path)
+        try:
+            self._build_pdf(job, tailored_summary, ordered_skills, output_path)
+        except PermissionError:
+            # Se o arquivo estiver aberto em outro processo (leitor de PDF no Windows), gera com sufixo
+            import time
+            alt_filename = f"{output_path.stem}_{int(time.time())}.pdf"
+            output_path = output_path.parent / alt_filename
+            self._build_pdf(job, tailored_summary, ordered_skills, output_path)
 
         return output_path
 
@@ -88,7 +95,7 @@ Diretrizes:
         if custom_summary:
             return custom_summary.strip()
 
-        return self.profile.professional_summary.strip()
+        return (self.profile.professional_summary or "").strip()
 
     def _order_skills(self, job: Job) -> dict:
         """Organiza as habilidades colocando primeiro as mais relevantes para a vaga."""

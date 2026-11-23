@@ -79,7 +79,7 @@ Escreva em Markdown elegante e em Português do Brasil.
 
         with open(out_file, "w", encoding="utf-8") as f:
             f.write(f"# Guia de Preparação de Entrevista: {job.title} @ {job.company}\n\n")
-            f.write(f"**Data de Geração:** {job.created_at[:10]}\n\n")
+            f.write(f"**Data de Geração:** {(job.created_at or '')[:10]}\n\n")
             f.write(guide)
 
         return guide

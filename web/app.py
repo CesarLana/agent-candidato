@@ -222,8 +222,8 @@ def api_apply_job(job_id: int, background_tasks: BackgroundTasks):
     def run_applicant_task():
         try:
             profile = load_candidate_profile()
-            applicant = JobApplicant(profile=profile)
-            applicant.apply_to_job(job.url, headless=True)
+            applicant = JobApplicant(profile=profile, headless=True)
+            applicant.apply_to_job(job, auto_submit=True, headless=True)
         except Exception as e:
             print(f"[Dashboard] Erro ao aplicar para vaga {job.id}: {e}")
 
