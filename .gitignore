@@ -39,3 +39,5 @@ logs/
 # Arquivo de Perfil do Usuário com dados pessoais (Mantenha o profile.example.yaml no git)
 # Descomente a linha abaixo caso queira proteger seu profile.yaml pessoal:
 # config/profile.yaml
+
+data/sessions/

@@ -151,6 +151,119 @@ class SessionManager:
             })
         return sessions
 
+    def save_cookie_session(self, platform: str, cookie_value: str) -> Dict:
+        """Salva uma sessão diretamente a partir do cookie principal (ex: li_at no LinkedIn)."""
+        clean_val = cookie_value.strip().strip('"').strip("'")
+        if not clean_val:
+            return {"success": False, "message": "Cookie não informado."}
+
+        info = PLATFORMS.get(platform)
+        if not info:
+            return {"success": False, "message": f"Plataforma '{platform}' desconhecida."}
+
+        cookie_name = "li_at" if platform == "linkedin" else "session_token"
+        domain = ".linkedin.com" if platform == "linkedin" else f".{info['domain']}"
+
+        storage = {
+            "cookies": [
+                {
+                    "name": cookie_name,
+                    "value": clean_val,
+                    "domain": domain,
+                    "path": "/",
+                    "expires": time.time() + (86400 * 30),
+                    "httpOnly": True,
+                    "secure": True,
+                    "sameSite": "None",
+                }
+            ],
+            "origins": []
+        }
+
+        session_data = {
+            "platform": platform,
+            "saved_at": datetime.now().isoformat(),
+            "user_info": f"Cookie {cookie_name} Conectado",
+            "cookies_count": 1,
+            "storage_state": storage,
+        }
+
+        session_file = self._session_file(platform)
+        session_file.write_text(json.dumps(session_data, ensure_ascii=False, indent=2), encoding="utf-8")
+        return {"success": True, "message": f"Sessão do {info['name']} salva com sucesso via cookie!"}
+
+    def login_with_credentials(self, platform: str, email: str, password: str) -> Dict:
+        """Realiza o login automatizado em modo headless usando e-mail e senha."""
+        if platform not in PLATFORMS:
+            return {"success": False, "message": f"Plataforma '{platform}' não suportada."}
+
+        info = PLATFORMS[platform]
+        pw = sync_playwright().start()
+        try:
+            browser = pw.chromium.launch(headless=True)
+            context = browser.new_context(
+                viewport={"width": 1280, "height": 850},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                locale="pt-BR",
+            )
+            page = context.new_page()
+            page.set_default_timeout(30000)
+
+            if platform == "linkedin":
+                page.goto("https://www.linkedin.com/login", wait_until="domcontentloaded")
+                page.fill("input#username", email)
+                page.fill("input#password", password)
+                page.click("button[type='submit']")
+                page.wait_for_timeout(4000)
+
+                # Verifica se entrou
+                cookies = context.cookies()
+                has_li_at = any(c.get("name") == "li_at" for c in cookies)
+
+                if has_li_at:
+                    storage = context.storage_state()
+                    user_info = self._extract_user_info(page, platform) or email
+                    session_data = {
+                        "platform": platform,
+                        "saved_at": datetime.now().isoformat(),
+                        "user_info": user_info,
+                        "cookies_count": len(storage.get("cookies", [])),
+                        "storage_state": storage,
+                    }
+                    session_file = self._session_file(platform)
+                    session_file.write_text(json.dumps(session_data, ensure_ascii=False, indent=2), encoding="utf-8")
+                    browser.close()
+                    pw.stop()
+                    return {"success": True, "message": f"Login no LinkedIn realizado com sucesso para {user_info}!"}
+
+                # Verifica se há checkpoint / 2FA / Captcha
+                cur_url = page.url.lower()
+                if "checkpoint" in cur_url or "challenge" in cur_url:
+                    browser.close()
+                    pw.stop()
+                    return {
+                        "success": False,
+                        "requires_2fa": True,
+                        "message": "O LinkedIn solicitou verificação de duas etapas (2FA) ou captcha. Use a aba 'Conectar via Cookie li_at' ou faça login pelo terminal: python main.py login linkedin."
+                    }
+
+                # Erro de senha
+                error_el = page.query_selector("#error-for-password, #error-for-username, .alert-content")
+                err_msg = error_el.inner_text().strip() if error_el else "Credenciais incorretas ou acesso recusado pelo LinkedIn."
+                browser.close()
+                pw.stop()
+                return {"success": False, "message": err_msg}
+
+            browser.close()
+            pw.stop()
+            return {"success": False, "message": f"Login por credenciais diretas não disponível para {platform}. Use o cookie de sessão ou login pelo terminal."}
+        except Exception as e:
+            try:
+                pw.stop()
+            except Exception:
+                pass
+            return {"success": False, "message": f"Erro durante autenticação: {str(e)}"}
+
     # ─────────────────────────────────────────────────────────
     #  Login interativo (abre navegador para o usuário logar)
     # ─────────────────────────────────────────────────────────

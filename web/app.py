@@ -317,6 +317,31 @@ def api_list_sessions():
     return session_mgr.list_sessions()
 
 
+class LoginCredentialsRequest(BaseModel):
+    email: str
+    password: str
+
+
+class CookieSessionRequest(BaseModel):
+    cookie_value: str
+
+
+@app.post("/api/sessions/{platform}/auth")
+def api_login_auth(platform: str, req: LoginCredentialsRequest):
+    """Autentica com e-mail e senha diretamente pelo servidor."""
+    session_mgr = SessionManager()
+    res = session_mgr.login_with_credentials(platform, req.email, req.password)
+    return res
+
+
+@app.post("/api/sessions/{platform}/cookie")
+def api_save_cookie(platform: str, req: CookieSessionRequest):
+    """Salva a sessão diretamente a partir do cookie principal (ex: li_at)."""
+    session_mgr = SessionManager()
+    res = session_mgr.save_cookie_session(platform, req.cookie_value)
+    return res
+
+
 @app.post("/api/sessions/{platform}/login")
 def api_start_login(platform: str, background_tasks: BackgroundTasks):
     """Inicia login interativo para uma plataforma (abre navegador)."""

@@ -958,30 +958,107 @@
         container.innerHTML = list.map(s => {
           const isActive = s.has_session;
           const statusBadge = isActive
-            ? '<span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">Conectado</span>'
-            : '<span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700 text-[10px]">Sem Login</span>';
+            ? '<span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold"><i class="fa-solid fa-check mr-1"></i>Conectado</span>'
+            : '<span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Não Conectado</span>';
 
           const actionBtn = isActive
-            ? `<button onclick="removeSession('${s.platform}')" class="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold">Desconectar</button>`
-            : `<button onclick="startLogin('${s.platform}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-600/30 flex items-center gap-1.5"><i class="fa-solid fa-arrow-right-to-bracket"></i> Conectar</button>`;
+            ? `<button onclick="removeSession('${s.platform}')" class="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold"><i class="fa-solid fa-arrow-right-from-bracket mr-1"></i>Desconectar</button>`
+            : `<button onclick="toggleLoginForm('${s.platform}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-600/30 flex items-center gap-1.5"><i class="fa-solid fa-chevron-down"></i> Opções de Login</button>`;
+
+          // LinkedIn e plataformas não conectadas já vêm abertas para não esconder os campos do usuário
+          const isExpanded = (!isActive && (s.platform === 'linkedin' || list.filter(x => !x.has_session).length === 1));
 
           return `
-            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-white font-bold text-sm">
-                  ${s.name.charAt(0)}
+            <div class="rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
+              <div class="p-3.5 flex items-center justify-between bg-slate-900/90">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-white font-bold text-sm">
+                    ${s.platform === 'linkedin' ? '<i class="fa-brands fa-linkedin text-blue-400 text-lg"></i>' : s.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-white text-sm">${s.name}</span>
+                      ${statusBadge}
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">
+                      ${s.user_info ? `Logado como: <strong class="text-emerald-300">${s.user_info}</strong>` : (isActive ? 'Sessão ativa e salva' : 'Preencha seus dados abaixo para conectar')}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-bold text-white text-sm">${s.name}</span>
-                    ${statusBadge}
+                <div>${actionBtn}</div>
+              </div>
+
+              <!-- FORMULÁRIO DE LOGIN (ABERTO POR PADRÃO PARA FACILITAR) -->
+              <div id="login-form-${s.platform}" class="${isExpanded ? '' : 'hidden'} p-4 border-t border-slate-800/80 bg-slate-950/70 space-y-4">
+                <div class="text-xs text-slate-300 font-medium pb-1 flex items-center gap-1.5">
+                  <i class="fa-solid fa-key text-emerald-400"></i> Escolha a forma mais fácil de conectar:
+                </div>
+
+                <div class="flex flex-wrap gap-2 border-b border-slate-800 pb-2">
+                  <button type="button" onclick="switchLoginMethod('${s.platform}', 'creds')" id="tab-creds-${s.platform}" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-at"></i> 1. E-mail e Senha
+                  </button>
+                  <button type="button" onclick="switchLoginMethod('${s.platform}', 'cookie')" id="tab-cookie-${s.platform}" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-cookie-bite"></i> 2. Cookie (${s.platform === 'linkedin' ? 'li_at' : 'Token'})
+                  </button>
+                  <button type="button" onclick="switchLoginMethod('${s.platform}', 'term')" id="tab-term-${s.platform}" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-terminal"></i> 3. Pelo Terminal
+                  </button>
+                </div>
+
+                <!-- Método 1: E-mail e Senha -->
+                <div id="method-creds-${s.platform}" class="space-y-3 pt-1">
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">E-mail da sua conta ${s.name}:</label>
+                    <input type="email" id="login-email-${s.platform}" placeholder="seu-email@exemplo.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
                   </div>
-                  <div class="text-[11px] text-slate-400 mt-0.5">
-                    ${s.user_info ? `Logado como: <strong class="text-slate-300">${s.user_info}</strong>` : (isActive ? 'Sessão com cookies ativa' : 'Requer login no navegador')}
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Senha:</label>
+                    <input type="password" id="login-pass-${s.platform}" placeholder="Sua senha da conta" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
                   </div>
+                  <div class="flex items-center justify-between pt-1">
+                    <span id="login-feedback-${s.platform}" class="text-[11px]"></span>
+                    <button onclick="submitCredentials('${s.platform}')" id="btn-submit-creds-${s.platform}" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30">
+                      <i class="fa-solid fa-lock"></i> Conectar Agora
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Método 2: Cookie de Sessão (100% infalível) -->
+                <div id="method-cookie-${s.platform}" class="hidden space-y-3 pt-1">
+                  <div class="p-3 rounded-lg bg-blue-950/40 border border-blue-800/40 text-[11px] text-blue-200 leading-relaxed">
+                    <strong class="text-blue-300 block mb-1"><i class="fa-solid fa-circle-info mr-1"></i> Como pegar o cookie no seu Chrome/Edge (10 segundos):</strong>
+                    1. No seu navegador onde você já está logado no LinkedIn, aperte <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-white font-mono">F12</kbd>.<br>
+                    2. Vá na aba <strong>Aplicativo (Application)</strong> &gt; no menu esquerdo abra <strong>Cookies</strong> &gt; <code>https://www.linkedin.com</code>.<br>
+                    3. Procure o cookie chamado <code>li_at</code>, dê dois cliques no valor dele, copie e cole abaixo.
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Cole o cookie ${s.platform === 'linkedin' ? 'li_at' : 'de sessão'} aqui:</label>
+                    <input type="text" id="login-cookie-${s.platform}" placeholder="Cole aqui o valor do cookie li_at..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono">
+                  </div>
+                  <div class="flex items-center justify-between pt-1">
+                    <span id="cookie-feedback-${s.platform}" class="text-[11px]"></span>
+                    <button onclick="submitCookie('${s.platform}')" id="btn-submit-cookie-${s.platform}" class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-blue-600/30">
+                      <i class="fa-solid fa-cookie-bite"></i> Salvar Cookie & Conectar
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Método 3: Terminal PowerShell -->
+                <div id="method-term-${s.platform}" class="hidden space-y-3 pt-1">
+                  <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 leading-relaxed">
+                    <strong class="text-emerald-400 block mb-1"><i class="fa-solid fa-desktop mr-1"></i> Abrir Janela Gráfica no seu Windows:</strong>
+                    Abra o seu terminal PowerShell ou Prompt de Comando nesta pasta e execute:
+                  </div>
+                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950 border border-slate-800 font-mono text-xs text-emerald-400">
+                    <span id="cmd-${s.platform}">python agent_candidato/main.py login ${s.platform}</span>
+                    <button onclick="copyToClipboard('cmd-${s.platform}')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-1" title="Copiar"><i class="fa-solid fa-copy"></i> Copiar</button>
+                  </div>
+                  <p class="text-[11px] text-slate-400">
+                    💡 Ou dê 2 cliques no arquivo <code class="text-emerald-400">logar_linkedin.bat</code> na pasta do projeto!
+                  </p>
                 </div>
               </div>
-              <div>${actionBtn}</div>
             </div>
           `;
         }).join('');
@@ -990,14 +1067,111 @@
       }
     }
 
-    async function startLogin(platform) {
-      alert(`O navegador será aberto para você fazer login na sua conta ${platform.toUpperCase()}.\n\nFaça login normalmente na janela que aparecer. O agente detectará e salvará sua sessão automaticamente!`);
-      try {
-        await fetch(`/api/sessions/${platform}/login`, { method: 'POST' });
-        setTimeout(openSessionsModal, 3000);
-      } catch (e) {
-        alert('Erro ao iniciar janela de login.');
+    function toggleLoginForm(platform) {
+      const form = document.getElementById(`login-form-${platform}`);
+      if (form) {
+        form.classList.toggle('hidden');
       }
+    }
+
+    function switchLoginMethod(platform, method) {
+      ['creds', 'cookie', 'term'].forEach(m => {
+        const btn = document.getElementById(`tab-${m}-${platform}`);
+        const box = document.getElementById(`method-${m}-${platform}`);
+        if (m === method) {
+          if (btn) btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white flex items-center gap-1.5';
+          if (box) box.classList.remove('hidden');
+        } else {
+          if (btn) btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white flex items-center gap-1.5';
+          if (box) box.classList.add('hidden');
+        }
+      });
+    }
+
+    async function submitCredentials(platform) {
+      const email = document.getElementById(`login-email-${platform}`).value.trim();
+      const password = document.getElementById(`login-pass-${platform}`).value.trim();
+      const feedback = document.getElementById(`login-feedback-${platform}`);
+      const btn = document.getElementById(`btn-submit-creds-${platform}`);
+
+      if (!email || !password) {
+        feedback.className = 'text-[11px] text-rose-400';
+        feedback.innerText = 'Preencha e-mail e senha.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Autenticando...';
+      feedback.className = 'text-[11px] text-blue-400';
+      feedback.innerText = 'Conectando ao serviço e obtendo sessão segura...';
+
+      try {
+        const res = await fetch(`/api/sessions/${platform}/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          feedback.className = 'text-[11px] text-emerald-400 font-bold';
+          feedback.innerText = `✓ ${data.message}`;
+          setTimeout(openSessionsModal, 1500);
+        } else {
+          feedback.className = 'text-[11px] text-rose-400';
+          feedback.innerText = data.message || 'Falha ao autenticar.';
+        }
+      } catch (e) {
+        feedback.className = 'text-[11px] text-rose-400';
+        feedback.innerText = 'Erro de conexão com o servidor local.';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-lock"></i> Entrar e Conectar';
+      }
+    }
+
+    async function submitCookie(platform) {
+      const cookieInput = document.getElementById(`login-cookie-${platform}`);
+      const cookieVal = cookieInput.value.trim();
+      const feedback = document.getElementById(`cookie-feedback-${platform}`);
+      const btn = document.getElementById(`btn-submit-cookie-${platform}`);
+
+      if (!cookieVal) {
+        feedback.className = 'text-[11px] text-rose-400';
+        feedback.innerText = 'Cole o valor do cookie.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Validando...';
+
+      try {
+        const res = await fetch(`/api/sessions/${platform}/cookie`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cookie_value: cookieVal })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          feedback.className = 'text-[11px] text-emerald-400 font-bold';
+          feedback.innerText = `✓ ${data.message}`;
+          setTimeout(openSessionsModal, 1500);
+        } else {
+          feedback.className = 'text-[11px] text-rose-400';
+          feedback.innerText = data.message || 'Erro ao salvar cookie.';
+        }
+      } catch (e) {
+        feedback.className = 'text-[11px] text-rose-400';
+        feedback.innerText = 'Erro ao conectar ao servidor.';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-cookie-bite"></i> Salvar Cookie';
+      }
+    }
+
+    async function startLogin(platform) {
+      toggleLoginForm(platform);
     }
 
     async function removeSession(platform) {
