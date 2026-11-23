@@ -5,7 +5,7 @@ from core.models import Job
 from scrapers.base import BaseScraper
 from scrapers.greenhouse import GreenhouseScraper
 from scrapers.lever import LeverScraper
-from scrapers.gupy import GupyScraper
+from scrapers.gupy import GupyScraper, search_gupy_jobs
 from scrapers.workable import WorkableScraper
 from scrapers.linkedin import LinkedInScraper
 from scrapers.universal import UniversalScraper
@@ -41,6 +41,7 @@ __all__ = [
     "UniversalScraper",
     "fetch_job_details",
     "search_linkedin_jobs",
+    "search_gupy_jobs",
     "search_remoteok_jobs",
     "search_weworkremotely_jobs",
 ]

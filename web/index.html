@@ -40,6 +40,12 @@
         </div>
       </div>
       <div class="flex items-center gap-3">
+        <button onclick="openSessionsModal()" class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-sm font-semibold transition" title="Contas e Sessões">
+          <i class="fa-solid fa-key"></i> Contas & Login
+        </button>
+        <button onclick="openSafetyModal()" class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-sm font-semibold transition" title="Status de Segurança Anti-Ban">
+          <i class="fa-solid fa-shield-halved"></i> Anti-Ban
+        </button>
         <button onclick="openProfileModal()" class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-sm font-semibold transition">
           <i class="fa-solid fa-user-pen text-indigo-400"></i> Meu Perfil
         </button>
@@ -370,6 +376,81 @@
     </div>
   </div>
 
+  <!-- MODAL DE AUDITORIA ATS -->
+  <div id="modalAts" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-2xl w-full rounded-2xl p-6 shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <h3 id="modalAtsTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-magnifying-glass-chart text-cyan-400"></i> Auditoria de Compatibilidade ATS
+        </h3>
+        <button onclick="closeModal('modalAts')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div id="modalAtsContent" class="overflow-y-auto py-4 space-y-4 text-xs text-slate-300">
+        <!-- Preenchido dinamicamente via JS -->
+      </div>
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button onclick="closeModal('modalAts')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE SALÁRIO & NEGOCIAÇÃO -->
+  <div id="modalSalary" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-2xl w-full rounded-2xl p-6 shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <h3 id="modalSalaryTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-dollar-sign text-emerald-400"></i> Consultor Salarial & Argumentos para RH
+        </h3>
+        <button onclick="closeModal('modalSalary')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div id="modalSalaryContent" class="overflow-y-auto py-4 space-y-4 text-xs text-slate-300">
+        <!-- Preenchido dinamicamente via JS -->
+      </div>
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button onclick="closeModal('modalSalary')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONTAS & SESSÕES -->
+  <div id="modalSessions" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-xl w-full rounded-2xl p-6 shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-key text-emerald-400"></i> Contas Conectadas & Sessões Persistentes
+        </h3>
+        <button onclick="closeModal('modalSessions')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <p class="text-xs text-slate-400 mt-2 mb-4">
+        Faça login uma vez para permitir candidaturas automáticas via perfil autenticado (ex: LinkedIn Easy Apply, Gupy) sem ser bloqueado como bot.
+      </p>
+      <div id="sessionsList" class="space-y-2.5 overflow-y-auto py-2">
+        <div class="text-center py-4 text-slate-500">Carregando sessões...</div>
+      </div>
+      <div class="pt-4 border-t border-slate-800 flex justify-end">
+        <button onclick="closeModal('modalSessions')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE SEGURANÇA ANTI-BAN -->
+  <div id="modalSafety" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-2xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-shield-halved text-amber-400"></i> Guarda Anti-Ban
+        </h3>
+        <button onclick="closeModal('modalSafety')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div id="safetyContent" class="py-4 space-y-3 text-xs text-slate-300">
+        <!-- Preenchido via JS -->
+      </div>
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button onclick="closeModal('modalSafety')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">Entendido</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let currentFilter = 'all';
     let currentView = 'grid';
@@ -519,10 +600,16 @@
             </div>
 
             <div class="pt-4 border-t border-slate-800 space-y-2.5">
-              <div class="grid grid-cols-4 gap-1.5">
+              <div class="grid grid-cols-3 gap-1.5">
                 <a href="/api/jobs/${job.id}/resume" target="_blank" class="py-1.5 px-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-[11px] font-semibold text-center transition" title="Baixar Currículo ATS sob medida">
-                  <i class="fa-solid fa-file-pdf"></i> PDF
+                  <i class="fa-solid fa-file-pdf"></i> PDF ATS
                 </a>
+                <button onclick="openAtsModal('${job.id}')" class="py-1.5 px-2 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 text-[11px] font-semibold transition" title="Auditoria de Compatibilidade ATS">
+                  <i class="fa-solid fa-magnifying-glass-chart"></i> Score ATS
+                </button>
+                <button onclick="openSalaryModal('${job.id}')" class="py-1.5 px-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold transition" title="Pretensão Salarial & Script RH">
+                  <i class="fa-solid fa-dollar-sign"></i> Salário
+                </button>
                 <button onclick="openLetterModal('${job.id}')" class="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold transition" title="Carta de Apresentação">
                   <i class="fa-solid fa-envelope"></i> Carta
                 </button>
@@ -538,11 +625,9 @@
                 <button onclick="openPrepModal('${job.id}')" class="flex-1 py-1.5 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold transition text-center" title="Guia de Entrevista">
                   <i class="fa-solid fa-graduation-cap mr-1"></i> Preparar Entrevista
                 </button>
-                ${job.status === 'pending' ? `
-                  <button onclick="applyDirectly(${job.id})" class="py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition" title="Candidatar Automaticamente">
-                    <i class="fa-solid fa-paper-plane"></i>
-                  </button>
-                ` : ''}
+                <button onclick="smartApply(${job.id})" class="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-md shadow-emerald-600/30" title="Candidatar Automaticamente">
+                  <i class="fa-solid fa-paper-plane"></i> Candidatar
+                </button>
                 <a href="${job.url}" target="_blank" class="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 text-xs font-semibold transition" title="Abrir Anúncio Original">
                   <i class="fa-solid fa-arrow-up-right-from-square"></i>
                 </a>
@@ -608,6 +693,12 @@
               </div>
 
               <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1 text-[11px]">
+                <button onclick="openAtsModal(${job.id})" class="text-cyan-400 hover:text-cyan-300" title="Auditoria ATS">
+                  <i class="fa-solid fa-magnifying-glass-chart"></i>
+                </button>
+                <button onclick="openSalaryModal(${job.id})" class="text-emerald-400 hover:text-emerald-300" title="Pretensão Salarial">
+                  <i class="fa-solid fa-dollar-sign"></i>
+                </button>
                 <button onclick="openOutreachModal(${job.id})" class="text-indigo-400 hover:text-indigo-300" title="Contato / Networking">
                   <i class="fa-solid fa-comments"></i>
                 </button>
@@ -619,6 +710,9 @@
                 </a>
                 <button onclick="openRoadmapModal(${job.id})" class="text-purple-400 hover:text-purple-300" title="Sprint de Gaps">
                   <i class="fa-solid fa-rocket"></i>
+                </button>
+                <button onclick="smartApply(${job.id})" class="text-emerald-400 hover:text-emerald-300 font-bold" title="Candidatar">
+                  <i class="fa-solid fa-paper-plane"></i>
                 </button>
               </div>
             </div>
@@ -701,16 +795,257 @@
     }
 
     async function applyDirectly(jobId) {
+      return smartApply(jobId);
+    }
+
+    async function smartApply(jobId) {
       const job = allJobs.find(j => j.id == jobId);
-      if (!confirm(`Deseja iniciar a candidatura automática para '${job ? job.title : jobId}'? O agente abrirá o navegador e preencherá os dados em segundo plano.`)) return;
+      if (!job) return;
+
+      const wantVisible = confirm(
+        `🚀 Iniciar Candidatura Automatizada para:\n"${job.title}" @ ${job.company}\n\n` +
+        `• Clique em [OK] para abrir o navegador VISÍVEL na sua tela (recomendado para acompanhar o preenchimento).\n` +
+        `• Clique em [Cancelar] se preferir rodar em segundo plano sem janela visível.`
+      );
+
+      const headless = !wantVisible;
 
       try {
-        const res = await fetch(`/api/jobs/${jobId}/apply`, { method: 'POST' });
+        const res = await fetch(`/api/jobs/${jobId}/smart-apply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ headless, auto_submit: false })
+        });
         const data = await res.json();
         alert(data.message || 'Candidatura iniciada!');
         setTimeout(loadData, 3000);
       } catch (e) {
         alert('Erro ao disparar candidatura.');
+      }
+    }
+
+    async function openAtsModal(jobId) {
+      const job = allJobs.find(j => j.id == jobId);
+      if (!job) return;
+      document.getElementById('modalAtsTitle').innerHTML = `<i class="fa-solid fa-magnifying-glass-chart text-cyan-400 mr-2"></i> Auditoria ATS: ${job.title} @ ${job.company}`;
+      document.getElementById('modalAtsContent').innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-cyan-400 block"></i>Escaneando compatibilidade com robôs ATS...</div>';
+      document.getElementById('modalAts').classList.remove('hidden');
+
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/ats-check`);
+        const data = await res.json();
+        const score = data.overall_score || 0;
+        const colorClass = score >= 80 ? 'text-emerald-400 border-emerald-500/30 bg-emerald-950/20' : (score >= 60 ? 'text-amber-400 border-amber-500/30 bg-amber-950/20' : 'text-rose-400 border-rose-500/30 bg-rose-950/20');
+
+        const demanded = (data.skills_analysis.demanded_skills || []).map(s => `<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">${s}</span>`).join(' ') || '<span class="text-slate-500">Nenhuma identificada</span>';
+        const matched = (data.skills_analysis.matched_skills || []).map(s => `<span class="px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/50">${s}</span>`).join(' ') || '<span class="text-slate-500">Nenhuma</span>';
+        const missing = (data.skills_analysis.missing_skills || []).map(s => `<span class="px-2 py-0.5 rounded bg-rose-950/40 text-rose-300 border border-rose-700/50">${s}</span>`).join(' ') || '<span class="text-emerald-400">Nenhuma lacuna crítica!</span>';
+
+        const tips = (data.recommendations || []).map((tip, idx) => `
+          <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-2">
+            <span class="w-5 h-5 rounded-full bg-cyan-600/30 text-cyan-300 font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">${idx+1}</span>
+            <span class="text-slate-300 leading-relaxed">${tip}</span>
+          </div>
+        `).join('');
+
+        document.getElementById('modalAtsContent').innerHTML = `
+          <div class="flex items-center justify-between p-4 rounded-xl border ${colorClass}">
+            <div>
+              <div class="text-xs uppercase font-bold tracking-wider">Score Geral de Aprovação ATS</div>
+              <div class="text-xs text-slate-400 mt-0.5">Probabilidade calculada de passar na triagem algorítmica</div>
+            </div>
+            <div class="text-3xl font-extrabold">${score}%</div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-bold text-white text-xs">1. Palavras-Chave e Hard Skills:</div>
+            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <div><span class="text-slate-400 text-[11px] block mb-1">Tecnologias Pedidas na Vaga:</span><div class="flex flex-wrap gap-1">${demanded}</div></div>
+              <div><span class="text-emerald-400 text-[11px] block mb-1">✓ Encontradas no seu CV:</span><div class="flex flex-wrap gap-1">${matched}</div></div>
+              <div><span class="text-rose-400 text-[11px] block mb-1">✗ Faltantes no seu CV:</span><div class="flex flex-wrap gap-1">${missing}</div></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <span class="text-slate-400 block text-[11px]">Formatação & Parseabilidade:</span>
+              <span class="text-white font-bold text-base">${data.formatting_analysis.score}/100 pts</span>
+              <span class="text-slate-500 block text-[10px] mt-0.5">${data.formatting_analysis.word_count} palavras legíveis</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <span class="text-slate-400 block text-[11px]">Métricas Quantificadas:</span>
+              <span class="text-white font-bold text-base">${data.impact_analysis.quantified_metrics_found} indicadores</span>
+              <span class="text-slate-500 block text-[10px] mt-0.5">Resultados com números no texto</span>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-bold text-white text-xs">Recomendações Cirúrgicas para Elevar a Nota:</div>
+            <div class="space-y-1.5">${tips}</div>
+          </div>
+        `;
+      } catch (e) {
+        document.getElementById('modalAtsContent').innerText = 'Erro ao processar auditoria ATS.';
+      }
+    }
+
+    async function openSalaryModal(jobId) {
+      const job = allJobs.find(j => j.id == jobId);
+      if (!job) return;
+      document.getElementById('modalSalaryTitle').innerHTML = `<i class="fa-solid fa-dollar-sign text-emerald-400 mr-2"></i> Pretensão Salarial: ${job.company}`;
+      document.getElementById('modalSalaryContent').innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-emerald-400 block"></i>Calculando faixa de mercado e scripts de negociação...</div>';
+      document.getElementById('modalSalary').classList.remove('hidden');
+
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/salary-advisor`);
+        const data = await res.json();
+
+        const props = (data.value_propositions || []).map(p => `
+          <div class="flex items-start gap-2 text-slate-300">
+            <i class="fa-solid fa-check text-emerald-400 mt-1 text-xs"></i>
+            <span>${p}</span>
+          </div>
+        `).join('');
+
+        document.getElementById('modalSalaryContent').innerHTML = `
+          <div class="grid grid-cols-2 gap-3 p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30">
+            <div>
+              <div class="text-xs text-slate-400 font-semibold uppercase">Faixa Recomendada (CLT)</div>
+              <div class="text-lg font-extrabold text-emerald-400 mt-0.5">${data.recommended_clt_range}</div>
+              <div class="text-[11px] text-slate-500">Alvo: ${data.recommended_clt_target}</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400 font-semibold uppercase">Equivalente Estimado (PJ)</div>
+              <div class="text-lg font-extrabold text-white mt-0.5">${data.recommended_pj_target}</div>
+              <div class="text-[11px] text-slate-500">${data.role_category}</div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-xs">1. Resposta Pronta para Formulários Online:</span>
+              <button onclick="copyToClipboard('salaryFormAnswer')" class="text-[11px] text-emerald-400 hover:text-emerald-300"><i class="fa-solid fa-copy mr-1"></i>Copiar</button>
+            </div>
+            <div id="salaryFormAnswer" class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200">${data.form_answer}</div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-white text-xs">2. Script para a Triagem Telefônica com o RH:</span>
+              <button onclick="copyToClipboard('salaryPitchText')" class="text-[11px] text-emerald-400 hover:text-emerald-300"><i class="fa-solid fa-copy mr-1"></i>Copiar</button>
+            </div>
+            <div id="salaryPitchText" class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 leading-relaxed italic">"${data.interview_pitch}"</div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-bold text-white text-xs">3. Seus Argumentos de Ancoragem (Cases Reais):</div>
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">${props}</div>
+          </div>
+        `;
+      } catch (e) {
+        document.getElementById('modalSalaryContent').innerText = 'Erro ao processar estimativa salarial.';
+      }
+    }
+
+    async function openSessionsModal() {
+      document.getElementById('modalSessions').classList.remove('hidden');
+      const container = document.getElementById('sessionsList');
+      container.innerHTML = '<div class="text-center py-6 text-slate-400"><i class="fa-solid fa-spinner fa-spin text-xl mb-2 block"></i>Verificando sessões salvas...</div>';
+
+      try {
+        const res = await fetch('/api/sessions');
+        const list = await res.json();
+        container.innerHTML = list.map(s => {
+          const isActive = s.has_session;
+          const statusBadge = isActive
+            ? '<span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">Conectado</span>'
+            : '<span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700 text-[10px]">Sem Login</span>';
+
+          const actionBtn = isActive
+            ? `<button onclick="removeSession('${s.platform}')" class="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold">Desconectar</button>`
+            : `<button onclick="startLogin('${s.platform}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-600/30 flex items-center gap-1.5"><i class="fa-solid fa-arrow-right-to-bracket"></i> Conectar</button>`;
+
+          return `
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-white font-bold text-sm">
+                  ${s.name.charAt(0)}
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-white text-sm">${s.name}</span>
+                    ${statusBadge}
+                  </div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">
+                    ${s.user_info ? `Logado como: <strong class="text-slate-300">${s.user_info}</strong>` : (isActive ? 'Sessão com cookies ativa' : 'Requer login no navegador')}
+                  </div>
+                </div>
+              </div>
+              <div>${actionBtn}</div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = '<div class="text-rose-400 text-xs py-4 text-center">Erro ao consultar sessões.</div>';
+      }
+    }
+
+    async function startLogin(platform) {
+      alert(`O navegador será aberto para você fazer login na sua conta ${platform.toUpperCase()}.\n\nFaça login normalmente na janela que aparecer. O agente detectará e salvará sua sessão automaticamente!`);
+      try {
+        await fetch(`/api/sessions/${platform}/login`, { method: 'POST' });
+        setTimeout(openSessionsModal, 3000);
+      } catch (e) {
+        alert('Erro ao iniciar janela de login.');
+      }
+    }
+
+    async function removeSession(platform) {
+      if (!confirm(`Deseja desconectar a sessão do ${platform.toUpperCase()}?`)) return;
+      try {
+        await fetch(`/api/sessions/${platform}`, { method: 'DELETE' });
+        await openSessionsModal();
+      } catch (e) {
+        alert('Erro ao remover sessão.');
+      }
+    }
+
+    async function openSafetyModal() {
+      document.getElementById('modalSafety').classList.remove('hidden');
+      const box = document.getElementById('safetyContent');
+      box.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin text-amber-400 text-lg mb-1 block"></i>Consultando limites...</div>';
+
+      try {
+        const res = await fetch('/api/safety-status');
+        const s = await res.json();
+        const hourClass = s.is_work_hours ? 'text-emerald-400' : 'text-amber-400';
+        const hourText = s.is_work_hours ? '✓ Horário comercial seguro (08h às 20h)' : '! Fora de horário comercial';
+
+        box.innerHTML = `
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400">Candidaturas Hoje:</span>
+              <span class="font-bold text-white">${s.total_today} de ${s.limit_total}</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400">Margem Segura Restante:</span>
+              <span class="font-bold text-emerald-400">${s.remaining_total} envios</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400">Limite por Plataforma:</span>
+              <span class="font-bold text-slate-300">Max ${s.limit_per_platform}/dia (ex: LinkedIn)</span>
+            </div>
+            <div class="flex justify-between items-center text-xs pt-1 border-t border-slate-800">
+              <span class="text-slate-400">Janela de Proteção:</span>
+              <span class="font-semibold ${hourClass}">${hourText}</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-relaxed">
+            O Guarda Anti-Ban evita disparos em massa automáticos e simula pausas de leitura humanas para manter sua conta do LinkedIn e Gupy 100% protegidas contra shadowban.
+          </p>
+        `;
+      } catch (e) {
+        box.innerText = 'Erro ao consultar status de segurança.';
       }
     }
 

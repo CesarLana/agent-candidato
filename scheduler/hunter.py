@@ -18,6 +18,7 @@ from core.resume_tailor import ResumeTailor
 from notifications.telegram_bot import TelegramNotifier
 from scrapers import (
     fetch_job_details,
+    search_gupy_jobs,
     search_linkedin_jobs,
     search_remoteok_jobs,
     search_weworkremotely_jobs,
@@ -44,13 +45,22 @@ class JobHunterDaemon:
         found_qualified_jobs: List[Job] = []
 
         for role in target_roles[:4]:  # Varre os 4 primeiros cargos prioritários
-            console.print(f"[cyan]Buscando vagas para:[/] [bold]{role}[/] {'(Remoto)' if is_remote else ''}...")
+            console.print(f"[cyan]Buscando vagas para:[/] [bold]{role}[/]...")
+
+            # 1. Busca no LinkedIn (Remoto e São Paulo)
             discovered_jobs = search_linkedin_jobs(
                 keywords=role,
-                location="Brazil",
+                location="São Paulo" if not is_remote else "Brazil",
                 remote_only=is_remote,
-                max_results=8,
+                max_results=10,
             )
+
+            # 2. Busca também no portal oficial da Gupy
+            try:
+                gupy_results = search_gupy_jobs(term=role, max_results=8)
+                discovered_jobs.extend(gupy_results)
+            except Exception:
+                pass
 
             for raw_job in discovered_jobs:
                 # 1. Verifica se já está no banco para evitar duplicidade

@@ -106,3 +106,49 @@ class GupyScraper(BaseScraper):
             )
         except Exception:
             return None
+
+
+def search_gupy_jobs(term: str, max_results: int = 15) -> list:
+    """Busca vagas públicas diretamente no portal oficial da Gupy."""
+    clean_term = re.sub(r"[^\w\s-]", "", term).strip().replace(" ", "%20")
+    url = f"https://portal.gupy.io/job-search/term={clean_term}"
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/128.0.0.0 Safari/537.36"
+        ),
+        "Accept-Language": "pt-BR,pt;q=0.9",
+    }
+    jobs = []
+    try:
+        r = requests.get(url, headers=headers, timeout=12)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, "html.parser")
+            tag = soup.find("script", id="__NEXT_DATA__")
+            if tag:
+                data = json.loads(tag.string)
+                raw_list = data.get("props", {}).get("pageProps", {}).get("initialJobList", {}).get("data", [])
+                for item in raw_list[:max_results]:
+                    name = item.get("name") or "Vaga Gupy"
+                    company = item.get("careerPageName") or "Empresa Gupy"
+                    job_url = item.get("jobUrl") or ""
+                    city = item.get("city") or ""
+                    state = item.get("state") or ""
+                    loc = f"{city}, {state}".strip(", ") or "Brasil"
+                    desc = item.get("description") or ""
+                    is_remote = "remot" in (name + " " + desc + " " + loc).lower()
+                    workplace = "Remoto" if is_remote else "Presencial/Híbrido"
+                    if job_url:
+                        jobs.append(Job(
+                            title=name,
+                            company=company,
+                            url=job_url,
+                            platform="gupy",
+                            location=loc,
+                            workplace_type=workplace,
+                            description=desc[:4000],
+                        ))
+    except Exception:
+        pass
+    return jobs

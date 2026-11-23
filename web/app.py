@@ -339,13 +339,21 @@ def api_logout(platform: str):
     return {"success": removed, "platform": platform}
 
 
+class SmartApplyRequest(BaseModel):
+    headless: Optional[bool] = False
+    auto_submit: Optional[bool] = False
+
+
 @app.post("/api/jobs/{job_id}/smart-apply")
-def api_smart_apply(job_id: int, background_tasks: BackgroundTasks):
+def api_smart_apply(job_id: int, background_tasks: BackgroundTasks, req: Optional[SmartApplyRequest] = None):
     """Candidatura inteligente: detecta plataforma, usa sessão se disponível."""
     jobs = list_jobs()
     job = next((j for j in jobs if j.id == job_id), None)
     if not job:
         raise HTTPException(status_code=404, detail="Vaga não encontrada.")
+
+    headless = req.headless if req else False
+    auto_submit = req.auto_submit if req else False
 
     session_mgr = SessionManager()
     platform = session_mgr.detect_platform(job.url)
@@ -360,17 +368,19 @@ def api_smart_apply(job_id: int, background_tasks: BackgroundTasks):
         try:
             profile = load_candidate_profile()
             if strategy == "linkedin_easy_apply":
-                applier = LinkedInApplier(profile=profile, headless=True)
-                applier.apply(job, auto_submit=True)
+                applier = LinkedInApplier(profile=profile, headless=headless)
+                applier.apply(job, auto_submit=auto_submit)
             else:
-                applicant = JobApplicant(profile=profile, headless=True)
-                applicant.apply_to_job(job, auto_submit=True, headless=True)
+                applicant = JobApplicant(profile=profile, headless=headless)
+                applicant.apply_to_job(job, auto_submit=auto_submit, headless=headless)
         except Exception as e:
             print(f"[Dashboard] Erro ao aplicar para vaga {job.id}: {e}")
 
     background_tasks.add_task(run_smart_apply)
+    mode_text = "em segundo plano" if headless else "em janela visível na sua tela"
     return {
-        "message": f"Candidatura inteligente iniciada para '{job.title}' @ {job.company}!",
+        "message": f"Candidatura iniciada para '{job.title}' @ {job.company} ({mode_text})!",
         "strategy": strategy,
         "platform": platform,
+        "headless": headless,
     }
