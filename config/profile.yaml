@@ -1,99 +1,179 @@
 # ==============================================================================
-# PERFIL DO CANDIDATO (Utilizado pela IA para preencher formulários e calcular fit)
-# Edite com as suas informações reais!
+# PERFIL DO CANDIDATO - CESAR BARBOSA DE LANA
+# Atualizado automaticamente com base no CV enviado
 # ==============================================================================
 
 personal_info:
-  first_name: "Carlos"
-  last_name: "Silva"
-  full_name: "Carlos Eduardo da Silva"
-  email: "carlos.silva.dev@exemplo.com"
-  phone: "+55 (11) 98765-4321"
+  first_name: "Cesar"
+  last_name: "Lana"
+  full_name: "Cesar Barbosa de Lana"
+  email: "cesarlana1511@gmail.com"
+  phone: "+55 (11) 95021-3630"
   city: "São Paulo"
   state: "SP"
   country: "Brasil"
-  postal_code: "01310-100"
-  address: "Av. Paulista, 1000"
+  postal_code: ""
+  address: "São Paulo, SP"
 
 links:
-  linkedin: "https://www.linkedin.com/in/carlos-silva-dev"
-  github: "https://github.com/carlos-silva-dev"
-  portfolio: "https://carlossilva.dev"
+  linkedin: "https://linkedin.com/in/cesarlana"
+  github: "https://github.com/CesarLana"
+  portfolio: ""
   other: ""
 
 documents:
-  # Caminho para o seu currículo em PDF (coloque seu arquivo na pasta data/ ou aponte aqui)
-  resume_pdf_path: "data/curriculo.pdf"
+  resume_pdf_path: "config/CV_Cesar_Lana.pdf"
 
 professional_summary: >
-  Desenvolvedor de Software com 4 anos de experiência com foco em Python, 
-  Node.js, Docker e bancos de dados SQL/NoSQL. Experiência na criação de APIs RESTful, 
-  microsserviços escaláveis e automações de processos. Inglês avançado para comunicação.
+  Profissional de TI com experiência em suporte e infraestrutura em ambientes
+  corporativos do setor financeiro. Atuação com atendimento presencial e remoto,
+  gestão de incidentes, administração de acessos e troubleshooting. Conhecimentos
+  em Microsoft 365, Entra ID, Linux e AWS, com projetos práticos em cloud,
+  containers e automação. Cursando Análise e Desenvolvimento de Sistemas (FMU).
+  Certificado AWS re/Start. Inglês intermediário para leitura de documentação técnica.
 
 skills:
   primary:
-    - "Python"
-    - "JavaScript"
-    - "TypeScript"
-    - "FastAPI"
-    - "Node.js"
-    - "Docker"
-    - "PostgreSQL"
-    - "Git"
-  secondary:
     - "AWS"
-    - "Redis"
-    - "React"
     - "Linux"
-    - "CI/CD"
+    - "Docker"
+    - "Python"
+    - "Bash"
+    - "Git/GitHub"
+    - "Windows Server"
+    - "Active Directory"
+    - "Microsoft 365"
+    - "Entra ID (Azure AD)"
+  secondary:
+    - "ServiceNow"
+    - "BMC Helix"
+    - "SQL"
+    - "Power BI"
+    - "Python/Boto3"
+    - "CloudFormation"
+    - "EC2"
+    - "S3"
+    - "IAM"
+    - "VPC"
+    - "Docker Compose"
+    - "Amazon ECR"
+    - "Active Roles"
+    - "InvGate"
+    - "Redes e Troubleshooting"
 
 preferences:
   target_roles:
-    - "Desenvolvedor Backend"
-    - "Software Engineer"
-    - "Python Developer"
-    - "Backend Engineer"
-    - "Full Stack Developer"
+    - "Analista de Infraestrutura Jr."
+    - "Analista de Suporte Jr."
+    - "DevOps Jr."
+    - "Cloud Engineer Jr."
+    - "Analista de Cloud Jr."
+    - "SRE Jr."
+    - "Analista de TI"
+    - "Administrador de Redes"
   work_modalities:
-    - "Remoto"
+    - "Presencial"
     - "Híbrido"
-  min_fit_score: 65
+    - "Remoto"
+  min_fit_score: 55
 
 faq_answers:
-  salary_expectation: "R$ 8.500,00 CLT ou R$ 12.000,00 PJ"
-  salary_number: "8500"
-  notice_period: "Disponibilidade imediata / 15 dias"
-  english_level: "Avançado / Fluente"
+  salary_expectation: "A combinar / dentro da faixa da vaga"
+  salary_number: "4000"
+  notice_period: "Disponibilidade imediata"
+  english_level: "Intermediário – leitura e interpretação de documentação técnica"
   work_authorization: "Sim, cidadão brasileiro residente no Brasil"
   sponsorship_required: "Não"
-  years_experience_general: "4"
-  education_level: "Ensino Superior Completo em Ciência da Computação"
+  years_experience_general: "2"
+  years_experience_infra: "1"
+  education_level: "Superior em andamento – Análise e Desenvolvimento de Sistemas (FMU, conclusão 12/2026)"
   gender: "Prefiro não informar"
   race_ethnicity: "Prefiro não informar"
   disability: "Não"
 
 experiences:
-  - company: "Tech Solutions Ltda"
-    role: "Desenvolvedor Backend Pleno"
-    period: "2022 - Atual"
-    description: "Desenvolvimento de microsserviços em FastAPI e Node.js. Otimização de consultas SQL reduzindo tempo de resposta em 40%."
-  - company: "Inova Web"
-    role: "Desenvolvedor Júnior"
-    period: "2020 - 2022"
-    description: "Manutenção de APIs, integração com gateways de pagamento e criação de rotinas automatizadas em Python."
+  - company: "DXC Technology"
+    role: "Analista de Infraestrutura Jr. – Projeto Itaú"
+    period: "11/2025 – 09/2026"
+    description: >
+      Suporte presencial e remoto em ambiente bancário, com média de 10 chamados por dia.
+      Gestão de incidentes e requisições, administração de acessos com Microsoft 365,
+      Entra ID (Azure AD), Active Roles e ServiceNow, além de configuração de equipamentos
+      e troubleshooting.
 
-# Banco de Histórias para perguntas comportamentais (Método STAR: Situação, Tarefa, Ação, Resultado)
+  - company: "DXC Technology"
+    role: "Analista de Suporte Técnico – Projeto B3"
+    period: "10/2026 – 11/2026"
+    description: >
+      Suporte presencial de hardware e conectividade; gestão de chamados no BMC Helix
+      e InvGate. Preparação e troca de aproximadamente 80 equipamentos, incluindo
+      imagens, perfis, backup, restauração e troubleshooting.
+
+  - company: "AeC Contact Center"
+    role: "Agente de Suporte Técnico"
+    period: "04/2025 – 07/2025"
+    description: >
+      Atendimento N1/N2, registro e acompanhamento de chamados no Salesforce,
+      diagnóstico remoto de conectividade e orientação aos usuários na resolução
+      de incidentes.
+
+projects:
+  - name: "Docker + Amazon ECR"
+    description: >
+      Conteinerização de servidor web com imagem Alpine (~25 MB), Docker Compose
+      e publicação em repositório privado Amazon ECR via AWS CLI.
+
+  - name: "AWS CloudFormation (IaC)"
+    description: >
+      Provisionamento em YAML de VPC, sub-redes, S3 e EC2, com consulta dinâmica
+      de AMIs pelo Systems Manager Parameter Store.
+
+  - name: "Arquitetura de Rede AWS (VPC)"
+    description: >
+      Laboratório com sub-redes públicas e privadas, Internet Gateway, NAT Gateway,
+      tabelas de rotas e instâncias EC2.
+
+  - name: "Automação AWS com Python/Boto3"
+    description: >
+      Scripts para operações com snapshots EBS e gerenciamento de usuários IAM,
+      com leitura de CSV e permissões por grupos.
+
+certifications:
+  - "AWS re/Start Graduate – Amazon Web Services (2026)"
+  - "Escola Avançada em Big Data Analysis – USP (2026)"
+  - "Power BI – Santander Open Academy (2026)"
+  - "Python, Lógica de Programação e POO – Fundação Bradesco (2024)"
+  - "Manutenção de Sistemas Operacionais – SENAI (2021)"
+
+education:
+  - institution: "FMU"
+    course: "Análise e Desenvolvimento de Sistemas"
+    period: "04/2024 – 12/2026 (em andamento)"
+  - institution: "Etec Centro Paula Souza"
+    course: "Técnico em Logística"
+    period: "02/2023 – 06/2026"
+
+# Banco de Histórias STAR para entrevistas
 star_stories:
-  - title: "Resolução de Gargalo de Latência no Backend"
-    situation: "O microsserviço de autenticação e processamento sofria picos de 3 segundos de latência em horários de pico."
-    task: "Otimizar o tempo de resposta sem aumentar os custos de infraestrutura."
-    action: "Analisei as queries no PostgreSQL, criei índices compostos adequados e adicionei camada de cache Redis com TTL de 5 minutos."
-    result: "A latência média caiu para 180ms (redução de 94%) e suportou 3x mais requisições simultâneas."
-    skills: ["PostgreSQL", "Redis", "FastAPI", "Performance"]
+  - title: "Gestão de Alto Volume de Chamados – Itaú"
+    situation: "Ambiente bancário com alta demanda, média de 10 chamados por dia com SLAs críticos."
+    task: "Garantir atendimento dentro do prazo mantendo qualidade e registro correto no ServiceNow."
+    action: >
+      Priorizei chamados por criticidade, padronizei scripts de diagnóstico remoto
+      e mantive documentação atualizada para reutilização da equipe.
+    result: "Zero chamados em atraso durante os 10 meses no projeto, com feedback positivo do cliente."
+    skills: ["ServiceNow", "Microsoft 365", "Suporte Técnico", "Infraestrutura"]
 
-  - title: "Liderança na Migração para Containers Docker"
-    situation: "Ambientes de desenvolvimento e produção tinham divergências frequentes de pacotes e dependências."
-    task: "Padronizar o ambiente de entrega e deploy contínuo de toda a equipe."
-    action: "Criei imagens Docker multi-stage enxutas e configurei pipelines de CI/CD para build e testes automáticos."
-    result: "O tempo de onboarding de novos desenvolvedores caiu de 2 dias para 30 minutos e eliminou erros de divergência."
-    skills: ["Docker", "CI/CD", "Linux", "DevOps"]
+  - title: "Rollout de 80 Máquinas em Curto Prazo – B3"
+    situation: "Projeto temporário de substituição de equipamentos na B3 com prazo apertado."
+    task: "Preparar cerca de 4 máquinas por dia com imagem, perfil, backup e restauração."
+    action: "Criei checklist padronizado e otimizei o fluxo de imagem para reduzir tempo por equipamento."
+    result: "Aproximadamente 80 equipamentos entregues dentro do prazo sem retrabalho."
+    skills: ["Hardware", "Windows", "BMC Helix", "InvGate"]
+
+  - title: "Automação de Gestão IAM com Boto3"
+    situation: "Necessidade de gerenciar múltiplos usuários IAM na AWS de forma manual e repetitiva."
+    task: "Automatizar criação, permissões e grupos de usuários IAM a partir de arquivo CSV."
+    action: "Desenvolvi script Python com Boto3 que lê CSV e aplica permissões por grupo automaticamente."
+    result: "Processo que levava horas reduzido a minutos, eliminando erros manuais."
+    skills: ["Python", "Boto3", "AWS IAM", "Automação"]

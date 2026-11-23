@@ -13,6 +13,8 @@ from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
 from automation.applicant import JobApplicant
+from automation.session_manager import SessionManager, PLATFORMS
+from automation.linkedin_applier import LinkedInApplier
 from core.config import load_candidate_profile, save_candidate_profile
 from core.database import export_to_csv, get_job_by_url, get_stats, list_jobs, save_job, update_job_status
 from core.interview_coach import InterviewCoach
@@ -265,3 +267,73 @@ def api_export_csv():
         filename="candidaturas.csv",
         media_type="text/csv",
     )
+
+
+# ═══════════════════════════════════════════════════════════════
+#  SESSÕES & LOGIN
+# ═══════════════════════════════════════════════════════════════
+
+@app.get("/api/sessions")
+def api_list_sessions():
+    """Lista todas as sessões de login ativas e seus status."""
+    session_mgr = SessionManager()
+    return session_mgr.list_sessions()
+
+
+@app.post("/api/sessions/{platform}/login")
+def api_start_login(platform: str, background_tasks: BackgroundTasks):
+    """Inicia login interativo para uma plataforma (abre navegador)."""
+    if platform not in PLATFORMS:
+        raise HTTPException(status_code=400, detail=f"Plataforma '{platform}' não suportada. Use: {', '.join(PLATFORMS.keys())}")
+
+    def run_login():
+        session_mgr = SessionManager()
+        session_mgr.interactive_login(platform)
+
+    background_tasks.add_task(run_login)
+    return {"message": f"Navegador aberto para login no {PLATFORMS[platform]['name']}. Faça login na janela que apareceu."}
+
+
+@app.delete("/api/sessions/{platform}")
+def api_logout(platform: str):
+    """Remove a sessão salva de uma plataforma."""
+    session_mgr = SessionManager()
+    removed = session_mgr.remove_session(platform)
+    return {"success": removed, "platform": platform}
+
+
+@app.post("/api/jobs/{job_id}/smart-apply")
+def api_smart_apply(job_id: int, background_tasks: BackgroundTasks):
+    """Candidatura inteligente: detecta plataforma, usa sessão se disponível."""
+    jobs = list_jobs()
+    job = next((j for j in jobs if j.id == job_id), None)
+    if not job:
+        raise HTTPException(status_code=404, detail="Vaga não encontrada.")
+
+    session_mgr = SessionManager()
+    platform = session_mgr.detect_platform(job.url)
+    strategy = "guest"
+
+    if platform == "linkedin" and session_mgr.has_session("linkedin"):
+        strategy = "linkedin_easy_apply"
+    elif platform and session_mgr.has_session(platform):
+        strategy = f"{platform}_authenticated"
+
+    def run_smart_apply():
+        try:
+            profile = load_candidate_profile()
+            if strategy == "linkedin_easy_apply":
+                applier = LinkedInApplier(profile=profile, headless=True)
+                applier.apply(job, auto_submit=True)
+            else:
+                applicant = JobApplicant(profile=profile, headless=True)
+                applicant.apply_to_job(job, auto_submit=True, headless=True)
+        except Exception as e:
+            print(f"[Dashboard] Erro ao aplicar para vaga {job.id}: {e}")
+
+    background_tasks.add_task(run_smart_apply)
+    return {
+        "message": f"Candidatura inteligente iniciada para '{job.title}' @ {job.company}!",
+        "strategy": strategy,
+        "platform": platform,
+    }

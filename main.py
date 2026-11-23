@@ -23,6 +23,8 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
 from automation.applicant import JobApplicant
+from automation.session_manager import SessionManager, PLATFORMS
+from automation.linkedin_applier import LinkedInApplier
 from core.config import get_profile_path, load_candidate_profile
 from core.database import export_to_csv, get_stats, list_jobs, save_cover_letter, save_job
 from core.interview_coach import InterviewCoach
@@ -603,6 +605,138 @@ def kanban():
         table.add_row(*row_cells)
 
     console.print(table)
+
+
+@app.command()
+def login(
+    platform: str = typer.Argument(..., help="Plataforma para login: linkedin, gupy, indeed, catho, infojobs, greenhouse"),
+):
+    """Faz login interativo em uma plataforma de vagas e salva a sessão para reutilizar."""
+    console.print(Panel.fit(f"[bold cyan]🔐 Login na Plataforma:[/] {platform}", border_style="green"))
+
+    if platform not in PLATFORMS:
+        console.print(f"[red]Plataforma '{platform}' não reconhecida.[/]")
+        console.print(f"[cyan]Plataformas disponíveis:[/] {', '.join(PLATFORMS.keys())}")
+        return
+
+    session_mgr = SessionManager()
+
+    # Verifica se já tem sessão
+    if session_mgr.has_session(platform):
+        info = session_mgr.get_session_info(platform)
+        user = info.get("user_info", "desconhecido") if info else "desconhecido"
+        console.print(f"[green]✓ Já existe sessão ativa do {PLATFORMS[platform]['name']}[/]")
+        console.print(f"[dim]  Logado como: {user}[/]")
+        renew = console.input("[yellow]Deseja renovar o login? (s/n): [/]").strip().lower()
+        if renew not in ["s", "sim", "y"]:
+            return
+
+    success = session_mgr.interactive_login(platform)
+    if success:
+        console.print(f"[bold green]✅ Login salvo com sucesso! A sessão será reutilizada nas próximas candidaturas.[/]")
+    else:
+        console.print(f"[red]Login não completado. Tente novamente.[/]")
+
+
+@app.command()
+def sessions():
+    """Lista todas as sessões de login ativas e seus status."""
+    console.print(Panel.fit("[bold cyan]📋 Sessões de Login Salvas[/]", border_style="cyan"))
+
+    session_mgr = SessionManager()
+    all_sessions = session_mgr.list_sessions()
+
+    table = Table(show_header=True, header_style="bold cyan")
+    table.add_column("Plataforma", min_width=12)
+    table.add_column("Status", justify="center", width=12)
+    table.add_column("Usuário", min_width=20)
+    table.add_column("Login em", width=20)
+
+    for s in all_sessions:
+        if s["has_session"]:
+            status = "[bold green]✅ Ativa[/]"
+            user = s["user_info"] or "-"
+            date = (s["saved_at"] or "")[:19].replace("T", " ")
+        else:
+            status = "[dim]⬚ Sem login[/]"
+            user = "-"
+            date = "-"
+        table.add_row(s["name"], status, user, date)
+
+    console.print(table)
+    console.print("\n[dim]Para fazer login: python main.py login <plataforma>[/]")
+    console.print("[dim]Plataformas: linkedin, gupy, indeed, catho, infojobs, greenhouse[/]")
+
+
+@app.command()
+def logout(
+    platform: str = typer.Argument(..., help="Plataforma para remover sessão"),
+):
+    """Remove a sessão salva de uma plataforma (logout)."""
+    session_mgr = SessionManager()
+    session_mgr.remove_session(platform)
+
+
+@app.command(name="smart-apply")
+def smart_apply_cmd(
+    url: str = typer.Argument(..., help="URL da vaga (LinkedIn, Gupy ou qualquer plataforma)"),
+    auto_submit: bool = typer.Option(False, "--auto-submit", help="Submete sem confirmação humana"),
+    headless: bool = typer.Option(False, "--headless", help="Roda o navegador sem interface visível"),
+    tailor: bool = typer.Option(True, "--tailor/--no-tailor", help="Gera currículo sob medida"),
+):
+    """Candidatura inteligente: detecta a plataforma, usa sessão logada se disponível, e aplica da melhor forma.
+
+    Se você estiver logado no LinkedIn/Gupy → usa Easy Apply.
+    Se não → usa o fluxo padrão de preenchimento de formulário.
+    """
+    console.print(Panel.fit(f"[bold cyan]🎯 Smart Apply:[/] {url}", border_style="blue"))
+
+    profile = load_candidate_profile()
+    llm = LLMEngine()
+    session_mgr = SessionManager()
+
+    # 1. Detecta a plataforma
+    platform = session_mgr.detect_platform(url)
+    if platform:
+        console.print(f"[cyan]📌 Plataforma detectada:[/] [bold]{PLATFORMS[platform]['name']}[/]")
+    else:
+        console.print("[dim]Plataforma não reconhecida — usando candidatura genérica.[/]")
+
+    # 2. Analisa a vaga
+    with console.status("[bold green]Coletando dados da vaga..."):
+        job = fetch_job_details(url)
+
+    if not job:
+        console.print("[bold red]Não foi possível extrair informações desta vaga.[/]")
+        return
+
+    with console.status("[bold green]Analisando fit com seu perfil..."):
+        score, summary, matched, missing = llm.evaluate_fit(job, profile)
+        job.fit_score = score
+        job.fit_summary = summary
+        job.skills_matched = matched
+        job.skills_missing = missing
+        job = save_job(job)
+
+    color = "green" if score >= 75 else ("yellow" if score >= 60 else "red")
+    console.print(f"[bold]Fit Score:[/] [{color} bold]{score}/100[/{color} bold]  |  {job.title} @ {job.company}")
+
+    # 3. Escolhe a melhor estratégia de candidatura
+    if platform == "linkedin" and session_mgr.has_session("linkedin"):
+        console.print("[bold green]🔗 Usando LinkedIn Easy Apply (sessão autenticada)![/]")
+        linkedin_app = LinkedInApplier(profile=profile, headless=headless)
+        linkedin_app.apply(job, auto_submit=auto_submit)
+    elif platform and session_mgr.has_session(platform):
+        console.print(f"[bold green]🔗 Sessão {PLATFORMS[platform]['name']} detectada → candidatura autenticada![/]")
+        # Para outras plataformas, usa o applicant padrão com contexto autenticado
+        applicant = JobApplicant(profile=profile, headless=headless, tailor_resume=tailor)
+        applicant.run_application(job, auto_submit=auto_submit)
+    else:
+        if platform:
+            console.print(f"[yellow]⚠ Sem sessão do {PLATFORMS[platform]['name']}. Usando candidatura como visitante.[/]")
+            console.print(f"[dim]Dica: python main.py login {platform}[/]")
+        applicant = JobApplicant(profile=profile, headless=headless, tailor_resume=tailor)
+        applicant.run_application(job, auto_submit=auto_submit)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Gerenciamento de instâncias do navegador com Playwright."""
+"""Gerenciamento de instâncias do navegador com Playwright + Stealth Mode."""
 
 import os
 from pathlib import Path
@@ -7,6 +7,47 @@ from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 USER_DATA_DIR = BASE_DIR / "data" / "browser_profile"
+
+
+# JavaScript de evasão injetado em cada página para evitar detecção de automação
+STEALTH_JS = """
+// Remove navigator.webdriver flag
+Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+
+// Falsifica plugins (Chrome real tem plugins)
+Object.defineProperty(navigator, 'plugins', {
+    get: () => [
+        { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer' },
+        { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai' },
+        { name: 'Native Client', filename: 'internal-nacl-plugin' },
+    ]
+});
+
+// Falsifica languages
+Object.defineProperty(navigator, 'languages', {
+    get: () => ['pt-BR', 'pt', 'en-US', 'en']
+});
+
+// Remove vestígios do Playwright/Puppeteer no Chrome
+if (window.chrome) {
+    window.chrome.runtime = { id: undefined };
+} else {
+    window.chrome = { runtime: { id: undefined } };
+}
+
+// Falsifica permissões
+const originalQuery = window.navigator.permissions.query;
+window.navigator.permissions.query = (parameters) =>
+    parameters.name === 'notifications'
+        ? Promise.resolve({ state: Notification.permission })
+        : originalQuery(parameters);
+
+// Falsifica hardware concurrency (máquinas reais têm 4+)
+Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });
+
+// Falsifica device memory
+Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
+"""
 
 
 class BrowserManager:
@@ -25,8 +66,20 @@ class BrowserManager:
         USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
         self._playwright = sync_playwright().start()
 
-        browser_args = ["--disable-blink-features=AutomationControlled"]
-        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        browser_args = [
+            "--disable-blink-features=AutomationControlled",
+            "--disable-dev-shm-usage",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-background-timer-throttling",
+            "--disable-backgrounding-occluded-windows",
+            "--disable-renderer-backgrounding",
+        ]
+        ua = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
+        )
 
         try:
             # Cria contexto persistente para reter cookies e parecer um navegador real
@@ -51,6 +104,14 @@ class BrowserManager:
             self.page = self.context.pages[0]
         else:
             self.page = self.context.new_page()
+
+        # Injeta stealth script em cada página
+        self.context.add_init_script(STEALTH_JS)
+        # Re-injeta na página atual (já aberta antes do add_init_script)
+        try:
+            self.page.evaluate(STEALTH_JS)
+        except Exception:
+            pass
 
         # Timeout padrão razoável de 30 segundos
         self.page.set_default_timeout(30000)
